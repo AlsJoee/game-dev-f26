@@ -2,10 +2,41 @@
 
 Principle: perception
 
-## Prediction (student writes before building)
+## Design and playtesting
 
-TODO: Describe one design change, the player behavior you predict, and what
-observation would make you question that prediction.
+### Decisions
+
+In my own play, the reference felt easy to predict two or three moves ahead: unproductive directions often became apparent quickly. I wanted movement to change the board, making planning depend on both position and remaining walls. Breakable surfaces in Fall Guys inspired the mechanic. I connect this to Schell Chapter 14 / Lens 58 through a change in perspective: a wall can be both an obstacle to remove and a stopping point to preserve. The introductory sequence teaches breaking walls before later boards challenge the assumption that breaking them always helps.
+
+The mechanic is my selected variation, not a rule attributed to Schell. The principle ID remains perception; gradual teaching supports that experiment.
+
+### Possible outcomes — predictions for the next test
+
+I expect players to learn the rule in the introductory boards, then reconsider their approach when removing a wall eliminates a needed stop. If they can explain the failure and deliberately choose another route, that would support the intended perspective shift. Alternatively, they may restart through trial and error or find the trap arbitrary; that would suggest the sequence or feedback needs revision.
+
+These predictions were articulated after development and self-play. They are not presented as a recorded pre-build hypothesis or as observed peer behavior.
+
+### Playtest — actual self-play
+
+During my own play, I developed the expectation that breaking a wall would help me advance. Puzzles 8 and 9 challenged that expectation: breaking a wall from an unsuitable approach could leave the current state without a route to the exit. I restarted and wanted to overcome the challenge. In puzzle 9, I found the two crowded corner areas misleading.
+
+These are my own impressions as the designer, not evidence of another player's experience. I did not supply exact action sequences, hint counts, restart counts, or completion counts. The game supports Undo as well as Reset; my account of restarting does not mean Reset is the only recovery option. Wall state changes during the collision action, with the animation conveying the change afterward.
+
+### Playtest — next plan and missing evidence
+
+Ask Player A to play the introductory sequence and then puzzles 8 and 9 without coaching. Observe whether they predict where slides stop, recognize a lost stopping point, use Undo/Reset, and change their route deliberately. Ask what changed their understanding. No specific peer-play observations are documented here; this is a future plan.
+
+TODO: Confirm the actual reference-game board design, exchange, and observation activity. The student has not yet supplied a factual account, so this draft does not mark it complete.
+
+### Next decision
+
+Keep the mechanic provisionally and test whether an unfamiliar player experiences an understandable challenge. If failures seem arbitrary, revise the teaching sequence or feedback before adding difficulty. A possible later experiment is a breakable wall that does not need to be consumed, testing the new assumption that every breakable wall is essential. This is a proposed extension, not an implemented feature.
+
+## Current submission status
+
+The branch contains nine built-in puzzles. Submission validation, 17 game tests, 43 project tests, JavaScript syntax, diff whitespace, and the local boundary check passed in the submission audit. Fork CI passed at 62f5f0f. The review-ready check was blocked by report TODOs. This remains a draft while the reference-game activity is unconfirmed.
+
+Historical implementation and verification records follow. Their earlier test counts and board descriptions refer to earlier versions, not additional current results. Assistant checks establish technical behavior; they do not establish human learning or enjoyment.
 
 ## Implementation
 
@@ -21,26 +52,15 @@ Automated browser interaction checks in Chrome: consuming F renders floor, Undo 
 
 Offline setup diagnostic passed after using the existing project venv and running outside the network-restricted sandbox. No live model was called. Offline success remains partial Setup Verification.
 
-## Playtest observations
+## AI assistance and human decisions
 
-TODO: Record anonymous player labels, board, version and order played, hints
-requested, restarts, completion, and one revealing action or remark. Separate
-observations from interpretations. No names, emails, or other personal data.
+Codex implemented the engine, solver, interface, levels, tests, documentation, and collision animation. I selected the one-use wall mechanic, requested the gradual introductory sequence and later trap boards, and supplied the self-play interpretation above. Earlier implementation records and independent reviews document technical verification. No specific peer response or human animation preference is claimed.
 
-## Interpretation and revision (student writes)
-
-TODO: Compare the evidence with the prediction. Mention prior familiarity,
-practice effects, sample size, or other limits. Describe the revision made or
-one next test. A single player's response supports a question, not a general claim.
-
-## AI assistance and human decisions (student writes)
-
-TODO: State what Codex generated, what you checked, and one design decision you
-retained or changed. Include any remaining known issues.
+Known limitations: large custom boards with many F walls can make solver search expensive; reduced-motion behavior was checked from source only. My familiarity with the design limits what my own play can establish about an unfamiliar player's experience.
 
 ## Independent review
 
-An independent read-only rules reviewer inspected the reference/student differences, rule map, engine, UI, tests, levels, and metadata. One should-fix finding requested exact code line references in the map. Those references were added; reviewer rechecked the map, rendering adjustment, and additional experiment-board test, independently reran all 12 Node tests, and reported “No findings.” The reviewer did not perform browser checks or approve a gate. Human experience evidence remains TODO above.
+An independent read-only rules reviewer inspected the reference/student differences, rule map, engine, UI, tests, levels, and metadata. One should-fix finding requested exact code line references in the map. Those references were added; reviewer rechecked the map, rendering adjustment, and additional experiment-board test, independently reran all 12 Node tests, and reported “No findings.” The reviewer did not perform browser checks or approve a gate. Student self-play is recorded above; peer experience remains unobserved in this report.
 
 ## Advanced board extension
 
@@ -48,13 +68,13 @@ Student request: “可以多加几个然后built in到第六第七个map里,这
 
 Added puzzles 6 and 7 in levels.js, keeping the first five unchanged. Both are 7×7 with one F and shortest solutions of 10 moves. The solver verifies each is unsolvable if F is replaced at the start with either permanent wall or floor. This verifies dependence on the new mechanic, not greater human difficulty. A new test failed before implementation (only five levels present).
 
-TODO: Student prediction and human comparison of these boards.
+No human comparison of puzzles 6 and 7 was supplied. The next-test predictions above do not establish their relative human difficulty.
 
 ## Fragile-wall trap boards
 
 Student requested built-in puzzles where removing the fragile wall can prevent completion. Added puzzles 8 and 9 without changing the rule engine. Each starts solvable; a specific wrong-side collision creates an unsolvable current state. Undo/Reset can recover. Tests verify both safe solutions and the losing traces (8: right; 9: right/up/down). The ninth board remains solvable after right/up, becoming unsolvable specifically after the F collision. Tests were run before adding each board and failed on missing levels.
 
-TODO: Human observations: did discovering the lost stopping point feel fair, frustrating, or informative? Student interpretation and prediction remain unwritten.
+Student self-play and interpretation of puzzles 8 and 9 are recorded above. No specific peer observation of fairness or frustration was supplied.
 
 ## Verification of built-in puzzles 6–9
 
@@ -70,16 +90,16 @@ Replaced only the first five boards and their prompts; kept puzzles 6–9 and al
 
 Two new teaching tests failed before the replacement. The original five-step experiment board remains in a fixed rule test, rather than being tied to the changing first level.
 
-TODO: Student prediction, human transfer observations and interpretation. Codex proposes that the first three forgiving boards help players predict stopping positions before taking on the later traps; this has not been demonstrated by human play.
+The gradual sequence was requested by the student. Its effect on an unfamiliar player remains a next-test prediction, not a demonstrated transfer result.
 
 ## Teaching-sequence verification
 
 Scaffold metadata check passed; 17 Node engine tests and 43 project Python tests passed. Independent reviewer found no functional issues and noted README should distinguish puzzle 4's recoverable trap from puzzle 5's forgiving layout. Documentation clarified. Reviewer independently enumerated all 30 reachable states of puzzle 5 and found each solvable.
 
-Chrome checks: each introductory shortest route completed in 2/2/3/4/8 moves with all F consumed; Next advanced through all five to puzzle 6. First collision stopped at the expected cell; Undo restored the wall. On puzzle 5, consuming one wall left two, Undo restored three, Reset restored three, and hint recommended down. At 390×844, content width matched viewport width and direction buttons worked. Browser restored to puzzle 1 at zero moves. Human learning and transfer remain TODO.
+Chrome checks: each introductory shortest route completed in 2/2/3/4/8 moves with all F consumed; Next advanced through all five to puzzle 6. First collision stopped at the expected cell; Undo restored the wall. On puzzle 5, consuming one wall left two, Undo restored three, Reset restored three, and hint recommended down. At 390×844, content width matched viewport width and direction buttons worked. Browser restored to puzzle 1 at zero moves. Human learning and transfer for an unfamiliar player remain untested in this report.
 
 ## Fragile-wall collision animation
 
 Student asked to optimize fragile-wall collision animation after publishing the initial branch. Presentation only: player DOM is preserved on F consumption so its slide transition continues. The wall splits into four pieces and fades outward after the 220ms slide, over 320ms; adjacent collisions begin immediately. Further moves clear old effects, and Undo/Reset restore board visuals. CSS hides effects for reduced motion; fallback cleanup removes overlays even when no animation event fires. Engine state and action timing are unchanged.
 
-Chrome checks observed four shards and the delayed effect class for moving collisions, immediate effect class plus unchanged position for adjacent collision, correct move count, rapid continuation to completion, Undo restoring F with no residual overlay, and Reset restoring F with no residual overlay. At 390×844, content width remained 390 and shards rendered. Reduced-motion behavior was checked from source only: this browser tool exposes no media emulation. Independent reviewer found no issues and confirmed JavaScript syntax plus all 17 engine tests. Human preference for timing and feel remains TODO.
+Chrome checks observed four shards and the delayed effect class for moving collisions, immediate effect class plus unchanged position for adjacent collision, correct move count, rapid continuation to completion, Undo restoring F with no residual overlay, and Reset restoring F with no residual overlay. At 390×844, content width remained 390 and shards rendered. Reduced-motion behavior was checked from source only: this browser tool exposes no media emulation. Independent reviewer found no issues and confirmed JavaScript syntax plus all 17 engine tests. No human preference evidence for animation timing and feel was supplied.
