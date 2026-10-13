@@ -22,13 +22,22 @@ During my own play, I developed the expectation that breaking a wall would help 
 
 These are my own impressions as the designer, not evidence of another player's experience. I did not supply exact action sequences, hint counts, restart counts, or completion counts. The game supports Undo as well as Reset; my account of restarting does not mean Reset is the only recovery option. Wall state changes during the collision action, with the animation conveying the change afterward.
 
-### Playtest — next plan and missing evidence
+### Playtest — recorded peer observations (2026-10-13)
 
-Ask Player A to play the introductory sequence and then puzzles 8 and 9 without coaching. Observe whether they predict where slides stop, recognize a lost stopping point, use Undo/Reset, and change their route deliberately. Ask what changed their understanding. No specific peer-play observations are documented here; this is a future plan.
+Player A, a classmate, played the reference and then my one-use-wall variation during an approximately twelve-minute recorded session. Selected player comments are paraphrased from the transcript:
 
-Reference-game peer activity: I have not exchanged a board with a classmate or observed a classmate playing. No exchange/playtest record exists. My self-play above does not complete that activity.
+- Player A asked whether the new wall was one-use, showing that its changed behavior was noticed.
+- Player A initially described the variation as easier than the reference, but later described a situation as difficult. These are changing impressions, not a measured difficulty comparison.
+- When the hint option was introduced, Player A said they preferred to think first.
+- Player A asked what a particular stopping position was useful for, noting that it would not normally be possible to stop there. This is relevant to the design question of treating walls as useful stopping points, rather than only obstacles.
 
-TODO: Arrange a remote board exchange and observation with a classmate. I can exchange board codes and observe through screen sharing; for the variation, I can provide the files or CI gallery and ask the player to try the introductory sequence and later trap boards. This is a plan, not a completed session.
+These observations suggest that the mechanic drew attention to stopping positions and planning. They do not yet establish independent mastery or transfer. The session included some verbal assistance; Player A played the reference first, and the recording lacks screen capture and exact level/action/hint/reset/completion counts. Speaker attribution and unclear wording remain transcription limitations.
+
+### Remaining activity and next test
+
+Player A's reference and variation play are now observed. I have not completed the separate activity of designing and exchanging board codes with a classmate, and this recording does not establish that exchange.
+
+TODO: Complete the reference board design/exchange activity. For a follow-up variation test, give a player an unseen board after the introductory sequence and observe stopping-point predictions and use of remaining walls without route assistance. Record the board/version, actions and Hint/Undo/Reset events. This is a future plan.
 
 ### Next decision
 
@@ -36,7 +45,7 @@ Keep the mechanic provisionally and test whether an unfamiliar player experience
 
 ## Current submission status
 
-The branch contains nine built-in puzzles. Submission validation, 17 game tests, 43 project tests, JavaScript syntax, diff whitespace, and the local boundary check passed in the submission audit. Fork CI passed at 62f5f0f. The review-ready check was blocked by report TODOs. This remains a draft because reference-game peer exchange/observation has not been completed; no specific peer test of the variation is documented.
+The branch contains nine built-in puzzles. Submission validation, 17 game tests, 43 project tests, JavaScript syntax, diff whitespace, and the local boundary check passed in the submission audit. Fork CI passed at 62f5f0f. The review-ready check was blocked by report TODOs. This remains a draft because the separate reference board design/exchange activity has not been completed; a recorded peer playtest is now documented, while board-code exchange remains incomplete.
 
 Historical implementation and verification records follow. Their earlier test counts and board descriptions refer to earlier versions, not additional current results. Assistant checks establish technical behavior; they do not establish human learning or enjoyment.
 
@@ -56,13 +65,13 @@ Offline setup diagnostic passed after using the existing project venv and runnin
 
 ## AI assistance and human decisions
 
-Codex implemented the engine, solver, interface, levels, tests, documentation, and collision animation. I selected the one-use wall mechanic, requested the gradual introductory sequence and later trap boards, and supplied the self-play interpretation above. Earlier implementation records and independent reviews document technical verification. No specific peer response or human animation preference is claimed.
+Codex implemented the engine, solver, interface, levels, tests, documentation, and collision animation. I selected the one-use wall mechanic, requested the gradual introductory sequence and later trap boards, and supplied the self-play interpretation above. Earlier implementation records and independent reviews document technical verification. Selected peer responses from the later recorded session are summarized above. No human animation preference is claimed.
 
 Known limitations: large custom boards with many F walls can make solver search expensive; reduced-motion behavior was checked from source only. My familiarity with the design limits what my own play can establish about an unfamiliar player's experience.
 
 ## Independent review
 
-An independent read-only rules reviewer inspected the reference/student differences, rule map, engine, UI, tests, levels, and metadata. One should-fix finding requested exact code line references in the map. Those references were added; reviewer rechecked the map, rendering adjustment, and additional experiment-board test, independently reran all 12 Node tests, and reported “No findings.” The reviewer did not perform browser checks or approve a gate. Student self-play is recorded above; peer experience remains unobserved in this report.
+An independent read-only rules reviewer inspected the reference/student differences, rule map, engine, UI, tests, levels, and metadata. One should-fix finding requested exact code line references in the map. Those references were added; reviewer rechecked the map, rendering adjustment, and additional experiment-board test, independently reran all 12 Node tests, and reported “No findings.” The reviewer did not perform browser checks or approve a gate. Student self-play and the later recorded peer session are documented above; the earlier reviews supplied technical evidence only.
 
 ## Advanced board extension
 
@@ -76,7 +85,7 @@ No human comparison of puzzles 6 and 7 was supplied. The next-test predictions a
 
 Student requested built-in puzzles where removing the fragile wall can prevent completion. Added puzzles 8 and 9 without changing the rule engine. Each starts solvable; a specific wrong-side collision creates an unsolvable current state. Undo/Reset can recover. Tests verify both safe solutions and the losing traces (8: right; 9: right/up/down). The ninth board remains solvable after right/up, becoming unsolvable specifically after the F collision. Tests were run before adding each board and failed on missing levels.
 
-Student self-play and interpretation of puzzles 8 and 9 are recorded above. No specific peer observation of fairness or frustration was supplied.
+Student self-play and interpretation of puzzles 8 and 9 are recorded above. The recorded peer comments above are not assigned to these exact levels; no level-specific fairness or frustration result is claimed.
 
 ## Verification of built-in puzzles 6–9
 
@@ -98,7 +107,7 @@ The gradual sequence was requested by the student. Its effect on an unfamiliar p
 
 Scaffold metadata check passed; 17 Node engine tests and 43 project Python tests passed. Independent reviewer found no functional issues and noted README should distinguish puzzle 4's recoverable trap from puzzle 5's forgiving layout. Documentation clarified. Reviewer independently enumerated all 30 reachable states of puzzle 5 and found each solvable.
 
-Chrome checks: each introductory shortest route completed in 2/2/3/4/8 moves with all F consumed; Next advanced through all five to puzzle 6. First collision stopped at the expected cell; Undo restored the wall. On puzzle 5, consuming one wall left two, Undo restored three, Reset restored three, and hint recommended down. At 390×844, content width matched viewport width and direction buttons worked. Browser restored to puzzle 1 at zero moves. Human learning and transfer for an unfamiliar player remain untested in this report.
+Chrome checks: each introductory shortest route completed in 2/2/3/4/8 moves with all F consumed; Next advanced through all five to puzzle 6. First collision stopped at the expected cell; Undo restored the wall. On puzzle 5, consuming one wall left two, Undo restored three, Reset restored three, and hint recommended down. At 390×844, content width matched viewport width and direction buttons worked. Browser restored to puzzle 1 at zero moves. Independent learning and transfer remain unverified; the later peer comments are summarized separately above.
 
 ## Fragile-wall collision animation
 
