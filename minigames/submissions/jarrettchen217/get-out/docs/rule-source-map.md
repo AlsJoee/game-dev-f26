@@ -6,7 +6,7 @@ Original student variation proposed by Codex and selected by the student; not a 
 | --- | --- |
 | Ordinary walls and edges stop slides; reaching E during a slide wins. | code: engine.js:26 and engine.js:34; preserved reference rules |
 | F is a one-use wall. A slide stops before F, then that wall becomes floor. An adjacent collision also consumes F and counts as one action, even without displacement. | code: engine.js:8, engine.js:27 and engine.js:37; tests/engine.test.cjs:45 and tests/engine.test.cjs:53 (failed before implementation) |
-| Undo restores the previous board and position; reset restores the initial board. | code: app.js:64, app.js:84 and app.js:85 (history/load) |
+| Undo restores the previous board and position; reset restores the initial board. | code: app.js:92, app.js:113 and app.js:114 (history/load) |
 | Observations show current walls; solver searches position plus remaining walls. | code: engine.js:42 and engine.js:47; tests/engine.test.cjs:61 and tests/engine.test.cjs:67 |
 
 ## Acceptance trace

@@ -56,12 +56,41 @@
     }
     if(!editing){const player=document.createElement('div');player.className='player';player.setAttribute('aria-hidden','true');const dot=document.createElement('span');dot.textContent='••';player.append(dot);board.append(player);}
   }
+  function crumbleWalls(broken, previous) {
+    const board=$('board');
+    const moved=previous.position[0]!==state.position[0]||previous.position[1]!==state.position[1];
+    for(const [r,c] of broken){
+      const cell=board.children[r*state.board[0].length+c];
+      cell.className='cell';
+      cell.setAttribute('aria-label',`Row ${r+1}, column ${c+1}: floor`);
+      cell.replaceChildren();
+      const crumble=document.createElement('span');
+      crumble.className=`wall-crumble${moved?' after-slide':''}`;
+      crumble.setAttribute('aria-hidden','true');
+      for(let i=0;i<4;i++){
+        const shard=document.createElement('i');shard.className='wall-shard';
+        shard.style.setProperty('--dx',i%2?'35%':'-35%');
+        shard.style.setProperty('--dy',i<2?'-35%':'35%');
+        shard.style.setProperty('--spin',i%2?'16deg':'-16deg');
+        crumble.append(shard);
+      }
+      const crack=document.createElement('span');crack.className='crumble-crack';crack.textContent='ϟ';crumble.append(crack);
+      cell.append(crumble);
+      crumble.addEventListener('animationend',event=>{if(event.target.classList.contains('wall-shard'))crumble.remove();});
+      // Also clean up when reduced motion suppresses animation events.
+      setTimeout(()=>crumble.remove(),650);
+    }
+    // The player DOM stays in place so its existing slide transition continues.
+    renderedBoard=state.board;
+  }
   function move(action) {
     if(editing||state.won)return;
+    $('board').querySelectorAll('.wall-crumble').forEach(effect=>effect.remove());
     const previous=state,next=game.step(state,action);
     const broken=[];previous.board.forEach((row,r)=>{for(let c=0;c<row.length;c++)if(row[c]==='F'&&next.board[r][c]==='.')broken.push([r,c]);});
     trace.push({type:'move',broken,action,from:previous.position.slice(),to:next.position.slice(),blocked:next===previous,won:next.won});
     if(next!==previous){history.push(previous);state=next;}
+    if(broken.length)crumbleWalls(broken,previous);
     refresh();
     if(state.won)announce(`You got out in ${state.moves} moves${hints?`, with ${hints} hint${hints===1?'':'s'}`:''}. What made the route click?`);
     else if(broken.length)announce(`One-use wall crumbled. You stopped at row ${state.position[0]+1}, column ${state.position[1]+1}; that wall is now floor. Undo restores it.`);

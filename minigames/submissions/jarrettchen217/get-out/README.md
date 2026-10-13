@@ -2,7 +2,7 @@
 
 Branch: `jarrettchen217/get-out`. Open `index.html` to play nine built-in puzzles.
 
-`F` is a cracked, one-use wall: a slide stops before it, then it becomes floor. An adjacent collision consumes it and counts as one action without displacement. Undo restores the previous wall configuration; reset restores the original puzzle. You can paint F in the editor and exchange board codes containing F.
+`F` is a cracked, one-use wall: a slide stops before it, then it becomes floor. An adjacent collision consumes it and counts as one action without displacement. The wall splits and fades after your slide reaches it; adjacent bumps respond immediately. Reduced-motion settings skip the effect. Undo restores the previous wall configuration; reset restores the original puzzle. You can paint F in the editor and exchange board codes containing F.
 
 ## Learn the rule: puzzles 1–5
 
