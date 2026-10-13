@@ -26,7 +26,9 @@ These are my own impressions as the designer, not evidence of another player's e
 
 Ask Player A to play the introductory sequence and then puzzles 8 and 9 without coaching. Observe whether they predict where slides stop, recognize a lost stopping point, use Undo/Reset, and change their route deliberately. Ask what changed their understanding. No specific peer-play observations are documented here; this is a future plan.
 
-TODO: Confirm the actual reference-game board design, exchange, and observation activity. The student has not yet supplied a factual account, so this draft does not mark it complete.
+Reference-game peer activity: I have not exchanged a board with a classmate or observed a classmate playing. No exchange/playtest record exists. My self-play above does not complete that activity.
+
+TODO: Arrange a remote board exchange and observation with a classmate. I can exchange board codes and observe through screen sharing; for the variation, I can provide the files or CI gallery and ask the player to try the introductory sequence and later trap boards. This is a plan, not a completed session.
 
 ### Next decision
 
@@ -34,7 +36,7 @@ Keep the mechanic provisionally and test whether an unfamiliar player experience
 
 ## Current submission status
 
-The branch contains nine built-in puzzles. Submission validation, 17 game tests, 43 project tests, JavaScript syntax, diff whitespace, and the local boundary check passed in the submission audit. Fork CI passed at 62f5f0f. The review-ready check was blocked by report TODOs. This remains a draft while the reference-game activity is unconfirmed.
+The branch contains nine built-in puzzles. Submission validation, 17 game tests, 43 project tests, JavaScript syntax, diff whitespace, and the local boundary check passed in the submission audit. Fork CI passed at 62f5f0f. The review-ready check was blocked by report TODOs. This remains a draft because reference-game peer exchange/observation has not been completed; no specific peer test of the variation is documented.
 
 Historical implementation and verification records follow. Their earlier test counts and board descriptions refer to earlier versions, not additional current results. Assistant checks establish technical behavior; they do not establish human learning or enjoyment.
 
