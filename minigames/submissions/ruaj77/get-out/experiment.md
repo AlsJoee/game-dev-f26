@@ -3,6 +3,15 @@
 Principle: `perception` — A Change in Perspective.
 Reference: Schell, Chapter 14, Lens #58: The Puzzle (course third edition).
 
+## Design decisions (student supplied)
+
+The variation connects Schell Chapter 14, Lens #58: The Puzzle to
+**A Change in Perspective (`perception`)**: a closed door can be a useful
+stopping point as well as a barrier. The student chose a one-time switch and
+stateful door, preserving the sliding rules and original four levels. Level 5,
+**The Door Is a Tool**, uses the final Candidate C layout. Designer self-play
+led to the board revision; no further gameplay changes follow this playtest.
+
 ## Prediction (student supplied before building)
 
 "Introducing a switch-controlled door will encourage players to reconsider
@@ -15,8 +24,10 @@ be strategically useful.
 Central insight: "A closed door is not merely an obstacle. It can also serve
 as a useful stopping point."
 
-TODO: Student supplies an observation that would challenge this prediction.
-The engine fixtures verify the rules; they do not establish this experience.
+A specific counter-observation was not recorded before building. Possible
+outcomes considered in the later playtest plan are preserved below; they are
+possibilities, not observed results. The engine fixtures verify the rules;
+they do not establish the intended player experience.
 
 ## Phase 3 engine implementation (approved by student)
 
@@ -60,28 +71,74 @@ Automated checks observed:
 
 Browser interactions were not tested during Phase 3; Phase 4 results follow.
 
-## Playtest observations
+## Independent human playtest observations — Player A
 
-TODO: Record anonymous player labels, board, version and order played, hints
-requested, restarts, completion, and one revealing action or remark. Separate
-observations from interpretations. No names, emails, or other personal data.
-No human playtest has been reported for this implementation.
+These are actual human observations supplied by the designer after the
+playtest, separate from designer self-play and automated testing. One player
+played **Level 5 — The Door Is a Tool (Candidate C)**.
 
-## Interpretation and revision (student writes)
+| Observation | Reported result |
+| --- | --- |
+| Completion | Successfully completed the puzzle |
+| Hints requested | 0 |
+| Resets | 0 |
+| Exact number of moves | Not recorded |
+| Perceived difficulty | Moderate |
+| Significant confusion | None reported |
+| Closed door used as a stopping point | Yes |
+| Conscious recognition of its strategic usefulness during play | No |
+| Recognition of its importance | During post-game reflection and discussion |
 
-TODO: Compare actual human evidence with the prediction. Consider prior
-familiarity, practice effects and sample size; choose a revision or next test.
-No claim about player insight or satisfaction follows from solver correctness.
+Successful use is not recorded as deliberate strategic use: Player A did not
+consciously recognize the door's usefulness while playing. No verbatim player
+quotes or additional action sequence were supplied. Play order, prior puzzle
+familiarity, earlier-level experience, Undo use, session duration and answers
+to the two planned neutral questions were not recorded. Fairness and
+satisfaction were not separately recorded. No additional participant or
+reference-versus-variation comparison was reported.
 
-## AI assistance and human decisions (student writes)
+## Interpretation (student supplied)
 
-Recorded provenance: the student supplied the title, principle, design
-hypothesis, intended experience, exact switch/door rules and scope limits.
-Codex performed the course scaffold, engine implementation, deterministic
-tests, and basic metadata/documentation under that specification.
+The original prediction was that players would recognize the closed door as
+a strategically useful stopping point. This playtest **partially supported**
+that prediction: Player A successfully used the intended mechanic, but did
+not consciously understand its importance during gameplay. Recognition
+occurred during post-game reflection and discussion instead.
 
-TODO: Student records what they personally checked, their interpretation,
-and any design decisions they retain or change after playing.
+This suggests that the mechanic functions correctly, while successful use
+does not necessarily demonstrate understanding. The evidence comes from
+**one player** and should not be generalized. With prior familiarity and play
+order unrecorded, practice effects cannot be assessed. Computational proof
+establishes mechanical requirements, not conscious insight or satisfaction.
+
+## Next design decision (student supplied)
+
+**Retain Candidate C.** The designer found its difficulty appropriate; Player A
+considered it moderate, completed it successfully and reported no significant
+confusion. All mechanical design constraints remain computationally verified.
+No further gameplay or interface changes are being implemented.
+
+For future iteration, test whether additional players recognize the closed
+door's strategic usefulness during gameplay rather than only in post-game
+reflection. This is a proposed next test, not a result or a scheduled session.
+
+## AI assistance and human decisions
+
+The student supplied the title, principle, hypothesis, intended experience,
+exact switch/door rules and scope limits. Codex scaffolded the personal copy,
+implemented the engine and UI, helped compare candidate boards, and added and
+ran deterministic, exhaustive and browser checks. Independent Codex reviewers
+checked rule changes; those reviews were not human playtests.
+
+The designer personally checked the original and revised puzzles, found the
+original seven-move board slightly too easy, selected Candidate C for more
+meaningful exploration and spatial reasoning without new mechanics, then
+found its difficulty appropriate. Exact designer statements are preserved in
+the final self-play section below. The designer supplied Player A's actual
+observations, the interpretation and the decision to retain Candidate C.
+Codex organized that supplied material into this report and drafted PR text;
+it did not observe Player A or generate missing playtest evidence. The student
+retains design decisions and submission approval; the instructor controls merge.
 
 ## Phase 3 independent review
 
@@ -91,9 +148,9 @@ documentation. They independently ran all 29 individual Node tests and
 confirmed the copied assets/levels/original tests and instructor reference
 were unchanged. No issues required resolution.
 
-Human play evidence remains TODO and is separate from code review. Browser
-interactions were untested at the end of Phase 3. The student and instructor retain approval
-decisions; no commit, push, PR, or merge was performed.
+At the end of Phase 3, human play evidence was not yet collected and was
+separate from code review. Browser interactions were also untested then. The student and instructor
+retain approval decisions; no commit, push, PR, or merge was performed.
 
 ## Phase 4 UI integration
 
@@ -145,7 +202,8 @@ and narrow-editor screenshots from Chromium were inspected.
 
 Not performed: physical-phone swipes, manual screen-reader testing,
 cross-browser checks, and human playtesting or perception observations.
-Playtest/interpretation TODOs above remain open. No fifth level was added;
+Human playtest observations and interpretation had not yet been supplied at
+this stage; the current evidence is recorded above. No fifth level was added;
 browser fixtures are test boards only. No commit, push, PR or merge was made.
 
 Phase 4 independent read-only review: "No findings." The reviewer independently
@@ -228,7 +286,7 @@ manifest remain unchanged. Original four level objects match the reference;
 all instructor reference files are unchanged. All source changes are personal.
 No additional level beyond Level 5, commit, push, PR or merge was created.
 
-### Prepared human playtest plan — not performed
+### Prepared human playtest plan — historical Phase 5 plan
 
 Design hypothesis supplied by the student:
 
@@ -261,10 +319,11 @@ equating a solver route with human experience. The sparse 23-state graph may
 make trial-and-error completion possible; test whether the key insight is
 noticed rather than assuming the seven-move target establishes difficulty.
 
-TODO: Actual human playtest observations, deliberate-use evidence, player
-explanations, interpretations, perceived fairness/satisfaction, and revisions.
-Physical-device, screen-reader and cross-browser checks remain unperformed.
-Final playtesting, refinement and PR preparation await explicit approval.
+At the end of Phase 5, actual human observations and interpretation had not
+been collected. The later Candidate C observations and remaining unknowns are
+recorded in the current sections above. Physical-device, screen-reader and
+cross-browser checks remain unperformed. This plan does not establish which
+protocol steps were followed in Player A's session; those were not recorded.
 
 Phase 5 independent read-only review: "No findings." The reviewer independently
 passed all 47 Node tests, confirmed all proof counts and eight preservation
@@ -314,9 +373,9 @@ retained. Its small exit alcove and less conspicuous alignment role were
 selected to encourage a strategic detour and support the perception principle.
 This rationale and prediction are not observed results for the revised board.
 
-TODO: independent human playtest observations, player explanations,
-interpretation, perceived difficulty/fairness and satisfaction for Candidate C.
-The prepared neutral playtest plan above remains applicable.
+At this stage, independent Candidate C playtest evidence had not yet been
+collected. Player A's later observations and the designer's interpretation
+are recorded above; fairness and satisfaction were not separately recorded.
 
 ### Candidate C integration results
 
@@ -357,7 +416,7 @@ Engine, solver, UI, controls, accessibility, prior engine tests and manifest
 hashes are unchanged. All source modifications are personal; no additional
 level, commit, push, PR or merge was created.
 
-At the end of integration, independent human playtesting remained TODO and
+At the end of integration, independent human playtesting had not occurred and
 the designer had not yet played the revised board. The subsequent designer
 self-play feedback is recorded below; it is not independent playtest evidence.
 
@@ -390,9 +449,96 @@ The designer approves retaining Candidate C as the final puzzle design for
 now. This feedback supports the designer's assessment of difficulty; it does
 not establish other players' understanding, deliberate strategy, or satisfaction.
 
-TODO: independent human playtest observations, participant explanations,
-interpretation, and limitations. The prepared neutral playtest plan remains
-available, and no participant observations or outcomes have been fabricated.
+Independent human evidence was still uncollected when this designer feedback
+was saved. The subsequent Player A observations, interpretation and limitations
+are now recorded separately above; no participant observations were inferred
+from designer self-play or automated tests.
 
-The current save is limited to validation and one commit/push to the personal
-fork. Pull request preparation remains pending the designer's next instructions.
+The implementation and designer feedback were saved to the personal fork in
+commit `e77fc7ab36eda21b3f9ecabfaed8118f9afe77f6`. The reflection-only task left
+the report update and PR text uncommitted for approval. The designer has since
+approved committing the documentation, pushing the personal branch and opening
+a Draft PR. Changing review status or merging remains subject to later approval.
+
+## Final reflection validation
+
+The final documentation update preserves Candidate C, all five levels, the
+engine, UI, tests and instructor reference. Fresh automated results follow;
+human observations above remain a separate source of evidence. No new human
+results are inferred from automated passes.
+
+### Automated testing results for the final reflection update
+
+- Individual Node suite: **48 passed, 0 failed, 0 skipped** with
+  `node --test --test-isolation=none minigames/submissions/ruaj77/get-out/tests/*.test.cjs`.
+- Chromium browser suite: **23 passed**, using
+  `python3 -B -m unittest discover -s minigames/submissions/ruaj77/get-out/tests -p 'test_*browser.py' -v`.
+  These are automated browser checks, not human playtesting.
+- Repository Python suite: **43 passed** with the frozen temporary dependency
+  environment and command recorded in the Phase 3 evidence above.
+- `python3 scripts/minigames.py check --owner ruaj77`: **passed**, one valid submission.
+- `python3 scripts/minigames.py test --owner ruaj77`: **passed**, three Node test
+  files; the explicit individual run above verifies the 48 assertions.
+- `python3 scripts/minigames.py check --owner ruaj77 --ready`: **passed**, one
+  valid submission. Unknown observations are explicitly identified as unrecorded.
+- `node minigames/submissions/ruaj77/get-out/verify-level5.cjs`: **verified**,
+  exact approved Candidate C, shortest length 11, 33 augmented states and 65
+  transitions. All required switch/closed-stop/open-traversal constraints hold,
+  with zero bypass wins, early activation transitions or losing dead-end states.
+- File hashes confirm that only this report and outdated README playtest
+  references changed. Game source, tests, Candidate C and instructor reference
+  are unchanged. The Node suite confirms that the original four levels still
+  match the instructor reference. The full diff against fetched instructor
+  main contains only this personal submission directory; `git diff --check`
+  passes. At completion of the reflection-only task, no files were staged and
+  HEAD remained the previously saved commit.
+
+There are no identified assignment-specific documentation or test blockers.
+The separate local Pyxel diagnostic limitation is recorded below.
+Exact human move count, prior familiarity, play order and separate
+fairness/satisfaction measures remain unrecorded. Physical-device swipes,
+manual screen-reader checks and cross-browser testing remain unperformed.
+These limitations are disclosed rather than replaced with fabricated results.
+At completion of the reflection-only task, no new commit, push, PR or merge had
+been performed. Subsequent submission operations follow the designer's explicit
+authorization; Git history and the Draft PR record those operations.
+
+### Separate local Pyxel diagnostic — unresolved environment limitation
+
+The repository's Python/Pyxel example is separate from this static
+HTML/JavaScript minigame, which does not use Pyxel. The root offline setup
+diagnostic previously reported `FAIL Pyxel engine: TimeoutExpired` at its
+30-second subprocess limit; the repository Python tests passed separately.
+
+The designer requested one standalone reproduction in Codex Cloud. The actual
+command used the existing frozen temporary environment and cache, without
+changing shared dependencies:
+
+```sh
+timeout --signal=TERM --kill-after=5s 60s env \
+  UV_PROJECT_ENVIRONMENT=/tmp/ruaj77-course-venv \
+  UV_CACHE_DIR=/tmp/ruaj77-uv-cache \
+  UV_PYTHON_DOWNLOADS=never PYTHONDONTWRITEBYTECODE=1 \
+  uv run --frozen python -m course_game.engine_check --headless
+```
+
+**Result: timeout reproduced; not passed.** The 60-second external timeout
+escalated to a forced kill after five further seconds; the command exited
+with **137**. Captured output:
+
+```text
+Failed to create secure directory (/home/agent/.config/pulse): Read-only file system
+pa_write() failed while trying to wake up the mainloop: Operation not permitted
+```
+
+The output reports filesystem/audio restrictions in the managed headless
+environment; the precise cause of the hang was not established. No successful
+engine completion was reported. No shared source, dependencies, tests or
+workflows were modified, and no check was disabled or bypassed.
+
+Fresh assignment-specific validation again passed: 48 individual Node tests,
+23 automated Chromium tests, 43 repository Python tests, owner check/test,
+ready validation, submission boundaries and exhaustive Candidate C verification.
+The designer explicitly authorized a Draft PR with this unrelated local
+diagnostic limitation disclosed. GitHub Actions results must be checked
+separately; the local timeout does not predict hosted CI success or failure.

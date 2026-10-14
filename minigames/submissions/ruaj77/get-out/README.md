@@ -20,8 +20,8 @@ history pattern restores a complete earlier snapshot, including moves and
 complete current state and visits `(row, column, doorOpen)` combinations, so
 returning to an earlier position after activation remains searchable.
 
-The design hypothesis and unfinished human playtesting are in `experiment.md`;
-deterministic evidence is in `rule-source-map.md`.
+The design hypothesis, designer self-play and Player A observations are in
+`experiment.md`; deterministic evidence is in `rule-source-map.md`.
 
 ## Level 5: The Door Is a Tool
 
@@ -50,13 +50,15 @@ The board has no reachable losing dead ends, and no activation can occur
 before the required stop. Alternative routes and loops are included in the
 proof; one winning state does not mean only one winning move sequence.
 These facts verify geometry, not human insight or satisfaction. See the
-prepared playtest plan in `experiment.md`; actual observations remain TODO.
+playtest plan and actual Player A observations in `experiment.md`.
 
 This revision follows designer self-play of the previous seven-move board,
 which the designer found relatively easy. The previous layout and the
 designer's observation, decision and prediction are preserved in `experiment.md`.
-Stronger discovery and increased perceived difficulty remain predictions,
-not independent human playtest results for Candidate C.
+Player A completed Candidate C without hints or resets and rated its difficulty
+moderate, but recognized the closed door's strategic value only during post-game
+reflection. This single-player evidence partially supports the prediction; it
+does not establish a general improvement in discovery or difficulty.
 
 ## Switch and door in the browser
 
@@ -239,9 +241,10 @@ simulated touch pointer events. Level 5 checks additionally exercise selector
 and Next navigation, a complete engine-solved playthrough, required collisions,
 activation/traversal, hints, Undo/Reset and 375px layout. Screenshots were
 inspected for the new board as well as closed/open states and the narrow editor
-layout. No physical-device, screen-reader or
-human playtest is claimed. The reference checklist below remains a useful
-broader manual check; see `experiment.md` for exactly what was performed.
+layout. These checks are automated browser testing. Physical-device, manual
+screen-reader and cross-browser checks remain unperformed. Player A's separate
+human playtest is recorded in `experiment.md`. The reference checklist below
+remains a useful broader manual check.
 
 Browser smoke check: finish the first board (down, right, down), undo, reset,
 request a hint, edit a wall, play the custom board, export and reload its
