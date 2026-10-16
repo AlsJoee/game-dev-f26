@@ -31,7 +31,7 @@ test('observations are detached and legal actions follow actual movement',()=>{
  const obs=game.observe(s);obs.position[0]=99;obs.board[0]='broken';
  assert.deepEqual(s.position,[0,0]);assert.equal(s.board[0],board[0]);
 });
-test('every teaching board is solvable and its solution reaches the exit',()=>{
+test('every challenge board is solvable and its solution reaches the exit',()=>{
  const levels=require('../levels.js');
  for(const level of levels){
   const initial=game.create(level.board),solution=game.solve(initial);

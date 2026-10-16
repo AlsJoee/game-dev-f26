@@ -1,181 +1,189 @@
 # Get Out! — Think Before You Peek
 
-Owner: `lfg2131` · Principle: `hints` · Status: draft; human evidence pending.
-
-The student supplied this design and hypothesis before implementation. No human
-playtest has been reported; technical checks do not establish understanding.
+Owner: `lfg2131` · Principle: `hints` · Status: draft; revised human test pending.
 
 ## Design and playtesting
 
 ### Decisions
 
-I want to investigate whether progressively revealing help lets players discover
-and understand a solution instead of simply following instructions. This applies
-Schell's Chapter 14 / Lens 58 — The Puzzle to useful hints that preserve discovery.
-The reference immediately supplies the next direction on a shortest route. My
-one deliberate change replaces that answer with three optional requests:
+I want players to discover and understand solutions rather than follow answers.
+My first intervention applies Schell's Chapter 14 / Lens 58 — The Puzzle by
+replacing immediate next-move hints with three optional requests:
 
-1. **Think:** a concise question about useful stopping positions or exit alignment.
-2. **Notice:** a truthful clue about a feature of a solver-verified route, such as
-   the final approach's stopping point and its wall or border. It does not name
-   the next movement direction; a generic truthful fallback covers other cases.
-3. **Reveal:** clearly labeled direct solution help giving the solver's next move.
+1. **Think:** a question about stopping positions or exit alignment.
+2. **Notice:** a truthful feature of a solver-verified route, without naming the
+   next direction; a truthful generic fallback covers other cases.
+3. **Reveal:** clearly labeled direct help giving the solver's next move.
 
-The UI shows assistance exposed and the next available request. Reveal exhausts
-help for that position. Successful moves and undo clear progression; blocked
-moves preserve it. Request totals survive moves/undo; reset or board load starts
-a fresh counter and trace. Completion disables hints; unreachable states offer
-honest undo/reset guidance. The engine, sliding rules, exit crossing, boards,
-editor, exchange, and offline play remain unchanged. Hints are never required.
+Moves and undo restart progression; blocked moves preserve it. Request totals
+survive moves/undo; reset or board load starts a fresh counter and trace.
+Completion disables hints; unreachable states offer undo/reset guidance. Hints
+remain optional and never change the board or move the player.
+
+**Actual observation — initial informal test, Player A:** The rules were easy
+to understand. The beginning was much too easy; later puzzles required somewhat
+more thinking but were still insufficiently challenging. Player A never used
+hints and wanted more puzzles and significantly harder beginning and ending
+challenges. No completion statistics, move counts, timings, or verbatim comments
+were supplied.
+
+**Interpretation:** This test did not establish whether progressive hints were
+useful because the participant never needed assistance. This fits possibility C
+below; it does not establish that hints are unnecessary or that other players
+would find these boards easy.
+
+**Next design decision:** Increase difficulty and variety to ten boards,
+preserving Think → Notice → Reveal and the original sliding rules, exit
+crossing, editor, exchange, controls, undo/reset, and offline play. The candidate
+`get_out_challenge_levels.js` was not found in Downloads, so independently
+generated layouts provide the sequence instead. Verified shortest lengths are
+7, 7, 8, 8, 9, 9, 10, 11, 12, and 15 moves. See
+[puzzle-design.md](puzzle-design.md) for stopping relationships and detours;
+solution length alone does not establish human difficulty.
+
+This is a **second intervention**: changing puzzles after changing assistance.
+More hint use would not establish that the hint design improved. Difficulty,
+familiarity, and board order could change usage independently. A fresh human
+playtest is necessary.
 
 ### Possible outcomes
 
-**Prediction:** I expect some players to solve or make meaningful progress after
-the first or second hint instead of needing the direct third hint. This would
-suggest that progressive clues can support puzzle reasoning while preserving
-discovery. A player explaining how a stopping point or alignment affected their
-choice would provide stronger evidence than completion or speed alone.
+**Original prediction:** Some players will solve or make meaningful progress
+after Think or Notice without needing Reveal. An explanation of how a stopping
+point changed their plan would support understanding more strongly than
+completion alone.
 
-- **A — All three hints immediately:** earlier hints may be too vague,
-  insufficiently relevant, or difficult to apply.
-- **B — Finish without explaining the clues:** completion alone does not establish
-  understanding; success might come from following directions or trial and error.
-- **C — Never use hints:** the board may be too easy or familiar. This does not
-  establish that hints are unnecessary.
+- **A — All three immediately:** early clues may be too vague, irrelevant, or
+  difficult to apply.
+- **B — Finish without explaining clues:** completion may reflect following
+  directions or trial and error rather than understanding.
+- **C — No hints:** the board may be too easy or familiar; an unused feature
+  cannot establish its usefulness.
 - **D — Frustration with extra requests:** disclosure may add friction without
-  enough learning benefit. Establish this through actual comments/decisions and
-  follow-up questions, not a trace alone.
+  enough reasoning benefit. Confirm through actual comments and questions,
+  rather than infer feelings from traces.
 
-These are predictions and possible interpretations, not observed outcomes.
+Only Player A's supplied feedback is observed; these remain possible
+interpretations, not additional results.
+
+**New hypothesis:** More demanding puzzles will create opportunities to observe
+whether players use Think, Notice, or Reveal and whether those hints improve
+their reasoning. Look for explained plans after clues and transfer to unfamiliar
+boards. Increased usage alone is insufficient.
 
 ### Playtest
 
-**TODO — student:** manually play `minigames/get-out/index.html`, initially
-without hints; note what you discovered and what the immediate hint changed.
-Design a board, verify with **Check & play**, save its code, and exchange boards
-with a classmate. Play theirs and observe them playing yours without coaching.
-Keep your solution private.
+**TODO — prior course activities:** manually play the reference, initially
+without hints; note discoveries and the effect of its immediate answer. Design
+a board, verify with **Check & play**, save its code, exchange with a classmate,
+play theirs, and observe them playing yours without coaching. The informal
+feedback does not establish completion of these activities.
 
-For the focused variation test:
+For the revised sequence:
 
-1. Give anonymous **Player A** an unfamiliar solvable board in this variation and
-   its on-screen instructions. Record code, version, order, and prior familiarity.
-   Do not coach or require thinking aloud.
-2. Record hint levels and next actions, successful/blocked moves, undo, resets,
-   completion, and a revealing decision or voluntary remark. Note possible clue
-   use as an interpretation to check afterward.
-3. Download traces before reset/board change, which clear the attempt. Keep
-   separate anonymous notes; traces cannot show whether a clue was understood.
-4. Ask: **“What were you trying to do?”** and
-   **“What changed your understanding?”** Record actual answers; avoid leading
-   questions about whether the hints were better.
-5. For comparison, use different players or alternate order across pairs on
-   unfamiliar comparable boards. Repeating a solution creates practice effects;
-   shortest-path length alone does not match human difficulty.
+1. Give anonymous **Player B** unfamiliar opening, middle, and late boards,
+   beginning at the opening. Provide on-screen instructions without coaching or
+   requiring think-aloud. Do not assume they complete every board.
+2. Record version, board codes, order, prior exposure, hint stages and subsequent
+   actions, successful/blocked moves, undo, resets, and completion. Keep actual
+   decisions or voluntary remarks separate from interpretations of clue use.
+3. Download traces before resets/board changes clear them. Keep anonymous notes;
+   traces do not show whether someone understood a clue.
+4. Ask **“What were you trying to do?”** and **“What changed your understanding?”**
+   Record actual answers without leading questions.
+5. To isolate hint design later, compare immediate and progressive hints using
+   comparable unfamiliar boards of the same difficulty, different players or
+   alternated order across pairs. Replaying known solutions introduces practice
+   effects; matching shortest lengths alone does not match human difficulty.
 
-Use this note form for each real attempt; leave it blank until observed:
-
-| Field | Actual observation / record |
-| --- | --- |
-| Anonymous player; version; board code; order | TODO |
-| Prior exposure to sliding puzzles / this board | TODO |
-| Hint levels, next actions, blocked moves, undo, resets | TODO |
-| Completion and revealing decision or actual remark | TODO |
-| Answer: “What were you trying to do?” | TODO |
-| Answer: “What changed your understanding?” | TODO |
-| Interpretation, competing explanation, next test | TODO — separate from observations |
-
-Use no personal data. A small classroom sample is exploratory; do not invent
-statistics, quotes, emotions, or outcomes.
+For each attempt, supply these currently unfilled fields: player/version/code/
+order; prior familiarity; actions and hint stages; completion and actual remarks;
+both follow-up answers; then interpretation, competing explanation, and next
+decision. Do not invent statistics, quotes, feelings, or outcomes. A small
+classroom sample remains exploratory.
 
 ### Next decision
 
-- **Expected outcome:** retain the three levels if early clues prompt explained
-  progress. Test another unfamiliar board to see whether the reasoning transfers.
-- **A:** revise the earliest ignored clue to point to a more usable relationship;
-  retest one wording change before adding more help.
-- **B:** use a fresh board involving the same idea and ask for the player's plan.
-  Revise clues to support explanation if completion still depends on Reveal.
-- **C:** test a more challenging or unfamiliar solvable board before changing
-  hints. Avoid interpreting an unused feature as either success or failure.
-- **D:** first improve the usefulness and clarity of the earlier clues. If actual
-  evidence still shows unhelpful friction, consider testing a clearly labeled
-  optional direct-reveal shortcut as a later experiment.
+The current decision keeps hints unchanged while testing challenge and fairness.
 
-No outcome or human-driven revision is claimed. The student must interpret real
-notes and choose what to retain or revise before marking the draft ready.
+- **Expected outcome:** retain early clues if they prompt explained progress;
+  test transfer on another unfamiliar board.
+- **A:** revise one ignored clue toward a more usable relationship, then retest.
+- **B:** ask for a plan on a fresh related board; revise clues if success still
+  depends on Reveal without explanation.
+- **C:** inspect familiarity and individual layouts before making boards harder
+  again or changing hints.
+- **D:** improve early-clue usefulness first; consider an optional direct-reveal
+  shortcut only as a separate later experiment if friction persists.
+
+If apparently harmless choices repeatedly cause confusing recovery, revise that
+layout first. Retain detours players can explain as fair discoveries. No revised
+human result is claimed; the student supplies notes and the next interpretation.
 
 ## Implementation and technical checks
 
-`hints.js` derives clues from the existing rules/solver; `app.js`, `index.html`,
-and `style.css` present help and trace requests. `tests/` checks rules and hints;
-README documents play and checks.
+Historical evidence for the four-board revision is preserved in
+[commit d5e6652](https://github.com/columbia-university-ai-games/game-dev-f26/blob/d5e6652/minigames/submissions/lfg2131/get-out/experiment.md).
+Owner validation, 22 minigame tests, JavaScript syntax, 43 repository tests,
+offline/headless diagnostics, and desktop/mobile Chrome checks passed on the
+final runs. Initial Python dependency and setup authentication failures were
+resolved before those passes. Offline diagnostics were partial Setup
+Verification; no live provider call occurred. Historical review found no
+substantive issues. These results do not substitute for checks of this revision.
 
-Executed on October 16, 2026, using Node 24.15.0 and Python 3.13.3:
+### Current checks: ten-board revision
 
-| Check | Actual result |
+| Executed check | Actual result |
 | --- | --- |
-| `python3 scripts/minigames.py check --owner lfg2131` | Pass: one valid personal submission. |
-| `python3 scripts/minigames.py test --owner lfg2131` | Pass: 22 tests, zero failures (7 inherited engine, 6 hint, 9 app integration). |
-| `node --check` on `app.js`, `hints.js`, and both added test files | Pass. |
-| `.venv/bin/python -m unittest discover -s tests -v` | Pass: all 43 repository tests. |
-| `uv run --frozen python -m course_game.setup_check --offline --headless` | Pass on final run: Python, Git, GitHub authentication, Pyxel, deterministic tests, explicitly labeled offline fixture. Partial Setup Verification only; no live provider call. |
+| `python3 scripts/minigames.py check --owner lfg2131` | Passed: one valid submission. |
+| `python3 scripts/minigames.py test --owner lfg2131` | All 28 tests passed; zero failures. |
+| `node --check` for all four game scripts and four test files | All eight passed. |
+| `uv run --frozen python -m unittest discover -s tests -v` | All 43 repository tests passed. |
+| `uv run --frozen python -m course_game.setup_check --offline --headless` | Passed; partial Setup Verification, no live provider call. |
 
-The added deterministic tests exercise 42 reachable teaching-board states and
-226 states across 36 seeded custom boards. They check clue truth, solver
-agreement, immutability, short routes, unreachable/terminal states, hint levels,
-counts, JSON traces, blocked moves, undo/reset, imports, editor cancellation,
-keyboard and synthetic touch. A solvable custom board can lead into a trap;
-the app test verifies honest recovery, ignored extra requests, and undo recovery.
+Independent stopping-graph traversal verifies the ten minimum lengths, winning
+replays and solver consistency at all 200 reachable positions (190 nonterminal).
+Every position retains a route. Tests check 600 hint outputs, including terminal
+responses, and retain arbitrary custom-board/trap coverage. Navigation tests
+exercise all ten levels, labels, final completion, selection, undo/reset, hint
+counts and trace clearing. Layout checks establish closer-looking but suboptimal
+choices and several detours/choice points in the finale.
 
-Headless Chrome passed at 1280 × 900 and a 320 × 740 touch viewport. Checks
-included a complete no-hint puzzle run, all hint levels, real JSON download,
-counts, terminal input, keyboard movement, undo/reset, editing a wall, custom
-export/reload, invalid and unsolvable imports, both workshop guides, touch
-buttons and an actual swipe. Both layouts fit without horizontal overflow;
-reduced motion disabled the player transition. Screenshots were inspected.
-No JavaScript page errors occurred. Local-file play and a hint worked with the
-browser offline. The in-app browser had no connection; this check used a
-separate headless Chrome session and a temporary Playwright smoke script.
+Headless Chrome passed at 1280 × 900 and 320 × 740 with touch: all ten puzzles
+completed without hints, each board's three hint stages matched the hint API,
+and undo/reset and terminal controls worked. Desktop Next traversed the sequence;
+mobile selection, touch buttons and a real swipe worked. JSON trace download,
+editor/cancel/wall painting, export/reload, invalid imports, custom trap recovery,
+both guides, reduced motion and accessibility attributes passed. All boards fit
+without horizontal overflow; no page errors or external requests occurred.
+Offline local-file play exercised the finale's hints. Layout/route diagrams and
+desktop/mobile screenshots were inspected. The in-app browser was unavailable;
+a separate temporary Playwright/Chrome session supplied these browser checks.
 
-Initial system-Python checks failed because its environment lacked dependencies
-(the unit suite could not import `anthropic`; the Pyxel diagnostic also failed).
-The existing project environment resolved those checks. An initial project
-setup run reported an authentication failure; separate `gh auth status` and the
-final setup retry passed. These earlier failures are not counted as passes.
+A fresh reviewer independently checked movement/BFS, all positions and hint
+stages, navigation, documentation and scope. No substantive findings or fixes
+were required. It confirmed `engine.js`, `app.js`, `hints.js` and `style.css`
+unchanged from the previous revision. It noted shared circuit motifs and a
+partly forced opening in the finale as human-testing limits; later choices and
+reused wall stops support planning, without proving perceived difficulty.
 
-Known limits: custom clues describe one shortest route, although other routes
-may exist. On a very simple board a relevant clue may still make the answer
-obvious. Progress and traces live only in memory until downloaded; resets clear
-the attempt. The spatial interface has not been established as a complete
-screen-reader-only experience. Human usefulness remains untested.
+Known limits: clues describe one shortest route; on simple boards a clue may make
+the answer obvious. Progress/traces remain in memory until downloaded. Complete
+screen-reader-only usability and human difficulty/usefulness of the new sequence
+remain unverified. Player B should assess whether repeated circuit ideas feel
+sufficiently varied and whether the late setups reward planning rather than
+repeated guessing.
 
 ## AI assistance and human decisions
 
-The student supplied the title, principle, design, prediction, alternatives, and
-human-test questions. Codex generated code/tests, helped structure the report,
-and arranged a separate technical review; executed results are recorded above.
-The student retains interpretation/approval; the instructor controls
-merging. No runtime model, network call, or paid service is required.
+The student supplied the original design, predictions, questions, actual
+qualitative feedback, and decision to increase difficulty. Codex generated
+code/tests and replacement board candidates, structured documentation, and
+arranged independent technical review. Solver/layout analysis is design evidence,
+not human observation. No runtime model, paid service, or network is required.
 
-**TODO — student:** complete reference play, design/exchange, and observation;
-supply anonymous notes, interpretation, and one decision retained or revised.
-No human activity is marked complete.
-
-## Independent review
-
-A separate Codex reviewer, uninvolved in implementation, read the instructions,
-reference, variation, tests, manifest and reflection. It found no substantive
-issues. The reviewer independently enumerated 10,224 valid small boards and
-34,464 reachable states to check clue truthfulness, solver consistency,
-immutability, unreachable and terminal handling; all checks passed. It also ran
-the owner validation and then-current 21 tests. The later trap integration test
-brought the final owner suite to 22 passing tests. No fixes were required.
-
-The engine, levels and inherited rule tests are byte-identical to the reference;
-the submission changes only the personal folder. The reviewer did not perform
-browser rendering or assistive-technology testing; the primary agent performed
-the browser checks above. Neither review nor automation establishes human
-usefulness. Keep the PR draft until the student supplies actual play evidence,
-interprets it, chooses a next decision, and completes the ready check. No gate
+**TODO — student:** confirm reference/exchange activities; conduct Player B's
+test; supply anonymous notes, interpretation, and a retain/revise decision.
+Keep PR #28 draft until the revised evidence and ready check are complete. The
+student retains accountability; the instructor controls merging. No gate
 approval or merge was performed.

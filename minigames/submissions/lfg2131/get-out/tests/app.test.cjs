@@ -7,10 +7,11 @@ const game = require('../engine.js');
 const levels = require('../levels.js');
 const hintAPI = require('../hints.js');
 const folder = path.join(__dirname, '..');
+const movementFixture = ['S..#.', '.....', '.#...', '.....', '....E'];
 
 // This small DOM double exercises the real event handlers and JSON export.
 // Browser layout, accessibility and touch smoke checks remain separate.
-function startApp() {
+function startApp(board = null) {
   let lastBlob;
   class Element {
     constructor(tag = 'div') {
@@ -58,7 +59,7 @@ function startApp() {
     Blob, URL: {createObjectURL(blob) { lastBlob = blob; return 'blob:test'; }, revokeObjectURL() {}},
     setTimeout(callback) { callback(); },
   }, {filename: 'app.js'});
-  return {
+  const app = {
     element: id => document.getElementById(id),
     click: id => document.getElementById(id).click(),
     move: action => moves.find(button => button.dataset.move === action).click(),
@@ -67,6 +68,11 @@ function startApp() {
     },
     async trace() { document.getElementById('download').click(); return JSON.parse(await lastBlob.text()); },
   };
+  if (board) {
+    app.element('board-code').value = board.join('\n');
+    app.click('import');
+  }
+  return app;
 }
 
 test('three accepted hint requests advance, label and count; extra requests do nothing', async () => {
@@ -95,7 +101,7 @@ test('three accepted hint requests advance, label and count; extra requests do n
 });
 
 test('blocked moves retain clues; successful moves and undo clear clues while preserving total requests', async () => {
-  const app = startApp(); app.click('hint'); app.move('up');
+  const app = startApp(movementFixture); app.click('hint'); app.move('up');
   let payload = await app.trace();
   assert.equal(payload.hintLevel, 1); assert.equal(payload.hints, 1);
   assert.equal(payload.events.at(-1).blocked, true);
@@ -113,7 +119,7 @@ test('blocked moves retain clues; successful moves and undo clear clues while pr
 });
 
 test('reset and board selection start clean attempts; invalid imports preserve the current attempt', async () => {
-  const app = startApp(); app.click('hint'); app.move('down');
+  const app = startApp(movementFixture); app.click('hint'); app.move('down');
   const before = await app.trace();
   for (const code of ['S..\n.E.\n...', 'SS\n.E', 'S?\n.E']) {
     app.element('board-code').value = code; app.click('import');
@@ -173,7 +179,7 @@ test('a trap reached on a valid custom board gives honest recovery guidance with
   assert.deepEqual(payload.events, []); assert.deepEqual(payload.position, initial.position);
 });
 
-test('every teaching puzzle can be completed without hints; terminal moves and hints are blocked', async () => {
+test('every challenge puzzle can be completed without hints; terminal moves and hints are blocked', async () => {
   for (const [index, level] of levels.entries()) {
     const app = startApp(); app.element('levels').value = String(index); app.element('levels').emit('change');
     const solution = game.solve(game.create(level.board));
@@ -190,8 +196,75 @@ test('every teaching puzzle can be completed without hints; terminal moves and h
   }
 });
 
+test('Next puzzle traverses all ten boards with current labels and clean counters, clues and traces', async () => {
+  const app = startApp();
+  assert.equal(levels.length, 10);
+  const options = app.element('levels').children;
+  assert.equal(options.length, 11, 'ten included puzzles plus the custom-board option');
+  for (const [index, level] of levels.entries()) {
+    const before = await app.trace();
+    assert.deepEqual(before.board, level.board);
+    assert.deepEqual(before.events, []);
+    assert.equal(before.moves, 0); assert.equal(before.hints, 0); assert.equal(before.hintLevel, 0);
+    assert.equal(app.element('levels').value, String(index));
+    assert.equal(app.element('level-number').textContent, `PUZZLE ${String(index + 1).padStart(2, '0')} / 10`);
+    assert.equal(app.element('level-title').textContent, level.name);
+    assert.equal(options[index].textContent, `${index + 1}. ${level.name}`);
+    assert.equal(app.element('next').hidden, true);
+
+    for (let stage = 1; stage <= 3; stage++) app.click('hint');
+    const solution = game.solve(game.create(level.board));
+    for (const action of solution) app.move(action);
+    const complete = await app.trace();
+    assert.equal(complete.outcome, 'escaped'); assert.equal(complete.hints, 3);
+    assert.equal(complete.events.filter(event => event.type === 'hint').length, 3);
+    assert.equal(complete.hintLevel, 0); assert.equal(complete.moves, solution.length);
+    assert.equal(app.element('next').hidden, index === levels.length - 1);
+
+    app.click('undo');
+    assert.equal((await app.trace()).outcome, 'in_progress');
+    assert.equal(app.element('next').hidden, true);
+    assert.equal(app.element('hint').disabled, false);
+    for (let stage = 1; stage <= 3; stage++) app.click('hint');
+    const lastClue = (await app.trace()).events.at(-1);
+    assert.equal(lastClue.kind, 'reveal');
+    assert.ok(lastClue.message.includes(solution.at(-1)));
+    app.move(solution.at(-1));
+    assert.equal((await app.trace()).outcome, 'escaped');
+    if (index < levels.length - 1) app.click('next');
+  }
+  app.click('reset');
+  const reset = await app.trace();
+  assert.deepEqual(reset.board, levels.at(-1).board);
+  assert.equal(reset.outcome, 'in_progress'); assert.equal(reset.hints, 0);
+  assert.equal(reset.hintLevel, 0); assert.equal(reset.moves, 0); assert.deepEqual(reset.events, []);
+  assert.equal(app.element('next').hidden, true);
+});
+
+test('selection returns from final or custom completion to a clean challenge attempt', async () => {
+  const app = startApp();
+  app.element('levels').value = '9'; app.element('levels').emit('change');
+  for (const action of game.solve(game.create(levels[9].board))) app.move(action);
+  assert.equal(app.element('next').hidden, true);
+  app.element('levels').value = '3'; app.element('levels').emit('change');
+  let payload = await app.trace();
+  assert.deepEqual(payload.board, levels[3].board); assert.deepEqual(payload.events, []);
+  assert.equal(payload.hints, 0); assert.equal(payload.hintLevel, 0); assert.equal(payload.moves, 0);
+
+  app.element('board-code').value = 'SE\n..'; app.click('import'); app.move('right');
+  payload = await app.trace();
+  assert.equal(payload.outcome, 'escaped'); assert.equal(app.element('next').hidden, true);
+  assert.equal(app.element('levels').value, 'custom');
+  app.element('levels').value = '0'; app.element('levels').emit('change');
+  payload = await app.trace();
+  assert.deepEqual(payload.board, levels[0].board); assert.deepEqual(payload.events, []);
+  assert.equal(payload.outcome, 'in_progress'); assert.equal(payload.hints, 0);
+  assert.equal(payload.hintLevel, 0); assert.equal(payload.moves, 0);
+  assert.equal(app.element('hint').disabled, false);
+});
+
 test('keyboard movement ignores text entry while regular arrow/WASD controls still work', async () => {
-  const app = startApp(), before = await app.trace();
+  const app = startApp(movementFixture), before = await app.trace();
   app.key('s', app.element('board-code')); assert.deepEqual(await app.trace(), before);
   app.key('s'); assert.equal((await app.trace()).moves, 1);
   app.key('ArrowRight'); assert.equal((await app.trace()).moves, 2);
@@ -211,7 +284,7 @@ test('completion reports all requests across multiple positions without counting
 });
 
 test('touch swipes move once, cancel cleanly, and do not trigger for mouse input', async () => {
-  const app = startApp(), board = app.element('board'), before = await app.trace();
+  const app = startApp(movementFixture), board = app.element('board'), before = await app.trace();
   board.emit('pointerdown', {pointerType: 'mouse', clientX: 50, clientY: 50});
   board.emit('pointerup', {pointerType: 'mouse', clientX: 50, clientY: 130});
   assert.deepEqual(await app.trace(), before);

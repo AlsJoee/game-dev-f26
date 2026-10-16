@@ -95,7 +95,7 @@ function checkNotice(state, path, message) {
   }
 }
 
-test('Think, Notice and Reveal remain truthful at every reachable teaching-board state', () => {
+test('Think, Notice and Reveal remain truthful at every reachable challenge-board state', () => {
   for (const level of levels) {
     for (const state of reachableStates(game.create(level.board))) checkHints(state);
   }

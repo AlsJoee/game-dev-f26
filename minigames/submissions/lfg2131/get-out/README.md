@@ -2,14 +2,19 @@
 
 A classroom adaptation of Eric Zimmerman's **Get Out!**, exercise 11 in
 *The Rules We Break* (printed pp. 90–97; game sheets pp. 185–189).
-The interface and four teaching boards were created for this course.
+The reference interface and four teaching boards were created for this course.
 The book's artwork, sample board, and prose are not bundled.
 
 This personal variation replaces immediate answer hints with **Think → Notice
 → Reveal**. It studies useful assistance that preserves discovery, applying
-Schell's Chapter 14 / Lens 58 — The Puzzle. The original sliding rules, boards,
-editor, and exchange tools are retained. See [experiment.md](experiment.md) for
-the prediction, planned human playtest, technical evidence, and open TODOs.
+Schell's Chapter 14 / Lens 58 — The Puzzle. After informal feedback that the
+original sequence was too easy to make hints useful to observe, this revision
+replaces its four boards with **ten challenge puzzles**. The original sliding
+rules, progressive hints, editor, and exchange tools are retained. See
+[puzzle-design.md](puzzle-design.md) for the board structures and verification,
+and [experiment.md](experiment.md) for actual feedback, predictions, technical
+evidence, and remaining human work. Longer solutions are a design constraint,
+not proof of human difficulty.
 
 ## Play
 
@@ -147,19 +152,21 @@ python3 scripts/minigames.py test --owner lfg2131
 
 The rules tests cover wall/border movement, blocked and invalid actions,
 exit crossing, terminal behavior, shortest paths, unreachable exits, malformed
-boards, detached observations, and the teaching boards' solvability. Additional
+boards, detached observations, and all ten challenge boards' solvability. Additional
 tests check progressive hint truthfulness, agreement with the solver, and hint
 state, counters, and trace behavior.
 
-Browser smoke check: finish the first board (down, right, down) without hints,
-undo, reset, then request Think, Notice, and Reveal. Confirm the direct answer
+Browser smoke check: finish a challenge board without hints using a separately
+verified solution, continue to the next level, undo, reset, then request Think,
+Notice, and Reveal. Confirm the direct answer
 matches the next legal solution move and the counter/trace records each request.
 Move, undo, and reset to verify fresh clues and attempt totals. Edit a wall,
 play the custom board, export and reload its code, reject an unsolvable code,
 and download a trace. Repeat with keyboard and phone controls at a narrow
 viewport; confirm reduced-motion and guide interactions preserve play state.
 Executed results belong in [experiment.md](experiment.md), separate from this
-checklist and the unfinished human playtest.
+checklist. The initial informal feedback is recorded; the revised sequence still
+needs a fresh human playtest.
 
 ## Sources
 
