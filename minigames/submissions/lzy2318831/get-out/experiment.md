@@ -58,18 +58,26 @@ student review, not a prediction recorded before implementation.
   Record anonymous player label, board/order, predicted and actual stopping
   points, hints, resets, completion, and a revealing action or remark. Avoid
   treating completion speed alone as evidence of understanding.
-- **Actual observations:** TODO: Await student-supplied peer playtest evidence.
-  The student's browser check confirms the right/down two-move route only.
+- **Actual observations (student-reported):** The student verified browser
+  completion in exactly two moves (right, then down). The student asked one
+  classmate (Player A) to play the introductory puzzle; they said it was
+  "a little too easy." No other peer actions, completion result, hint usage,
+  or evidence of learning were supplied.
 - **Possible next decisions:** Keep the introduction if predictions transfer;
   clarify the prompt if one-square expectations persist; try a second short
   board with a different stopping point if players only copy the directions.
-  Choose a revision after observing play.
+  Given Player A's feedback, consider keeping this board as a brief warm-up
+  or testing a slightly less guided follow-up before changing its difficulty.
+  These are possible next steps, not implemented revisions or proven needs.
 
 ## Playtest observations
 
-TODO: Record anonymous player labels, board, version and order played, hints
-requested, restarts, completion, and one revealing action or remark. Separate
-observations from interpretations. No names, emails, or other personal data.
+Student-reported peer feedback: Player A was asked to play the introductory
+puzzle and said it was "a little too easy."
+
+TODO: Board version, order played, hints, restarts, completion, stopping-point
+predictions, and transfer to another board were not supplied. Do not infer
+those observations from the difficulty comment.
 
 ## Interpretation and revision (student writes)
 
@@ -86,12 +94,13 @@ retained or changed. Include any remaining known issues.
 
 An independent read-only Codex review found no code defects. It checked the
 intro board, regression test, manifest, dynamic board sizing/level sequencing,
-and preservation of the four original boards and engine. All nine new files
-are inside `minigames/submissions/lzy2318831/get-out/`; tracked files have no
-diff against the local class base `origin/main`.
+and preservation of the four original boards and engine. All nine added files
+are inside `minigames/submissions/lzy2318831/get-out/`; no changes outside that
+folder appear against the class base `origin/main`.
 
 The reviewer identified stale browser-verification wording. It is now updated
 to distinguish the student's reported two-move browser completion from pending
 control checks and peer learning observations. Submission validation and all
 8 game tests passed again during this review. No new browser checks were run.
-The student and instructor retain approval decisions; no PR was created.
+The student and instructor retain approval decisions. This review did not
+approve a course gate or merge.
