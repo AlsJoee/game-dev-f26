@@ -1,67 +1,120 @@
-# Get Out: visited stopping places
+# Get Out: progressive hints
 
-Principle: `progress` — visible progress.
+Principle: `hints`.
 
 ## Prediction before building
 
-The student chose route history and approved this prediction in the implementation plan:
+The student selected progressive hints: a question, then a clue, then a move.
+The student's goal, in their own words:
 
-> If I mark places where the player has stopped, I expect them to recognize repeated routes and make more deliberate choices.
+> Help them figure out the route themselves and feel that they solved it.
 
-The marks could instead add clutter, go unnoticed, or make a player avoid a useful repeated stop. That would challenge the prediction. These are predictions, not playtest findings.
-
-## Implementation
-
-Added an exploration record to the existing Get Out interface. It marks the start and the endpoint of each successful move. Visited stops remain after Undo and clear on Reset or loading another board. Canceling the editor or rejecting an invalid board preserves the record. Movement rules, scoring, hints, and the solver are unchanged.
-
-The marks say where the player has stopped. They do not measure closeness to the solution. All history stays in memory.
+The expected behavior below is a prediction. There are no reported human
+playtest results for this variation.
 
 ## Design and playtesting
 
-**Decisions:** Add visible marks to visited stopping places. The student selected this experiment to investigate whether an exploration record helps players recognize repeated routes. The chosen idea is Puzzle Principle 3 in Schell's Chapter 14: giving a sense of progress. In the third edition, this principle and Lens 55 (Visible Progress) appear on page 258. Schell writes:
+**Decisions:** I added a question, then a clue, then a move. Each step is optional.
+I want players to figure out the route themselves and feel that they solved it.
+This uses Schell's Chapter 14, Principle 8: hints can sustain interest (p. 263).
+Schell writes that "a well-timed hint can renew their hope and their curiosity."
+Lens 58 asks, "Which of the ten puzzle principles apply to each of my puzzles?"
+(p. 265). Here I am applying the hints principle to the route-finding puzzle.
 
-> Players need to see that they are making progress when solving a difficult problem.
+**Possible outcomes:** I expect a player to use a question or clue and then work
+out a move themselves. If they can explain the move and say they felt they
+solved it, that would support my goal. They might instead click through to the
+move every time. That could mean the earlier hints are too vague or that the
+player wants a direct answer. Completing the board alone would not show
+understanding or ownership.
 
-Source: Jesse Schell, *The Art of Game Design: A Book of Lenses*, third edition (2019), Chapter 14, p. 258. [Chapter DOI](https://doi.org/10.1201/b22101-14).
+**Playtest:** Ask Player A to solve an unfamiliar board. Say the hints are
+optional. Watch without coaching. Record which levels they request, what they
+do next, and whether they continue without more help. Ask, "How did you decide
+your next move?" and "What felt like your own discovery?" Record their actual
+words separately from my prediction. A comparison with direct hints should use
+comparable unfamiliar boards and alternate version order across players;
+repeating a known solution introduces practice effects.
 
-Lens 58 (The Puzzle), on page 265, asks designers to identify which puzzle principles apply to their puzzles. Here the rings make exploration visible. Whether that helps the player understand the route is the question being tested. The marks do not show distance to the solution.
+**Next decision:** If a question or clue helps the player reason through a move,
+I would keep the sequence and test another board. If they skip to the answer,
+I would ask why and revise the earlier hints if they were unclear. If hints
+spoil the discovery, I would make the clue less specific. Checks and known
+limits are listed below. Human interpretation remains pending.
 
-**Possible outcomes:** A player may recognize a loop and deliberately try another direction. That would suggest the record helps orientation. A player may ignore the marks or treat a visited square as a mistake. That would suggest the display is unclear or discourages useful revisiting. Fewer moves alone would not establish better understanding.
+## Implementation
 
-**Playtest:** Ask Player A to solve an unfamiliar board using the on-screen instructions. Watch without coaching. Record the board code, version, order, hints, resets, completion, and a revealing action or remark. Ask, "What were you trying to do?" and "What did the marks mean to you?" For a later comparison, alternate reference/variation order across players and avoid interpreting a faster repeat of a known solution as an interface effect.
-
-**Next decision:** If the player notices a loop and uses the record to choose a move, keep the markers and test another unfamiliar board. If they avoid necessary revisits, clarify the legend and retest. If the display feels cluttered, reduce marker prominence and check whether it remains readable. If the marks go unnoticed, test a clearer legend before adding more features.
+- The first request shows a question. The second adds a clue about a useful
+  stopping feature or exit alignment. The third reveals one move.
+- Clues are derived from the current board and the reference solver. They
+  apply to imported and edited boards as well as the teaching boards.
+- Every hint is optional. Requesting help never moves the player.
+- Successful moves and Undo restart the sequence. Blocked moves preserve it.
+- Reset and valid new boards clear help. Editor Cancel and invalid imports
+  preserve the previous sequence. Help is hidden during editing.
+- Unreachable positions receive staged recovery help. Finished boards disable
+  hints. After all three levels, further requests are disabled until play changes.
+- The trace records the level, kind, message, and position. The hint count
+  counts revealed levels, not how many positions needed help.
+- Reference rules, solver, move scoring, and teaching boards are unchanged.
+  The earlier route-history experiment is preserved in Git history; its
+  markers are absent from this variation.
 
 ## Actual playtest observations
 
-TODO: The student missed the classmate-exchange session. That exchange remains incomplete. Player A is available for a planned playtest, but no human observations of the reference or variation have been reported. Automated and browser checks below are software validation, not a human playtest.
+TODO: No human playtest of progressive hints has been reported. The student
+missed the classmate-board exchange. That exchange remains incomplete.
+A family member is available to test the variation as Player A. This does not
+claim that a family test fulfills the classmate-exchange requirement.
 
 ## Interpretation and revision
 
-TODO: Add the student's interpretation after human play. Compare the observation with the prediction. Record prior familiarity, practice effects, and the limits of a small sample. Do not claim that the design improved understanding without evidence.
+TODO: Add the student's observations and interpretation after play. Ask
+whether the hints supported their intended feeling of solving it themselves.
+Keep the player's words distinct from inferred understanding. A small test is
+exploratory, and no positive result is required.
 
-## AI assistance and human decisions
+## Checks and known limits
 
-The student chose the route-history experiment and approved the scope and prediction before implementation. Codex scaffolded the copy, implemented the markers and tests, and organized the approved plan into this report. At the student's request, Codex then verified the quotation and page references directly in the third-edition chapter through Columbia Libraries. The student's human-playtest observations and interpretation remain pending. The current CourseWorks assignment does not require a separate AI-use disclosure.
+- All 13 student-game tests pass. The hint tests first failed because the new
+  hint module was absent, then passed after implementation.
+- Move hints were checked at every reachable position on the four teaching
+  boards. No rule or solver changes were needed.
+- Submission validation passes. All 83 deterministic Python tests pass.
+  Offline/headless setup diagnostics pass; this is partial setup verification,
+  with no live model calls.
+- Browser checks pass for all hint levels, blocked/successful moves, Undo,
+  Reset, board selection, completion, custom-board hints, no-route recovery,
+  editor Cancel after an invalid edit, invalid/unsolvable imports, valid board
+  exchange, trace display/download, and keyboard focus in both guides.
+- At 390 x 844, there is no horizontal overflow. Direction buttons are
+  58 x 48 pixels; the hint button is at least 44 pixels high. On-screen
+  movement and completion work at that size. The browser reports no errors.
+- An independent reviewer found that hiding the empty hint live region could
+  suppress the first announcement. The region now stays rendered. The
+  reviewer verified the fix and found no remaining actionable issues.
+- The reviewer also checked clue and move validity over 6,262 positions on
+  1,000 generated boards. This is software validation, not human evidence.
+- The engine, solver, teaching boards, and original rule tests are byte-identical
+  to the instructor reference.
+- A question can repeat at different positions. Some clues may still be too
+  vague or too revealing; the playtest should investigate that.
+- Physical touchscreen and screen-reader-only play have not been tested.
 
-## Independent review and checks
+## Decision provenance
 
-A separate Codex reviewer compared the student copy with the instructor reference. The reviewer flagged that generic spans do not reliably expose accessible names. Play cells now use `role="img"`; editor cells remain native buttons. The reviewer confirmed the fix and found no remaining actionable issues. That review was static, separate from the checks below.
-
-- `python3 scripts/minigames.py check --owner oscarodonnell1`: passed.
-- `python3 scripts/minigames.py test --owner oscarodonnell1`: all 12 tests passed, including five new exploration tests.
-- Full lab validation and all 45 Node tests passed; gallery generation succeeded.
-- `uv run --frozen python -m unittest discover -s tests -v`: all 83 Python tests passed. The system Python lacked dependencies, so the checks used the repository's locked environment.
-- `uv run --frozen python -m course_game.setup_check --offline --headless`: passed offline checks, including the Pyxel engine. This is partial setup verification, with no live model call.
-- Browser checks passed for keyboard and on-screen movement, blocked actions, stopping-cell marks, hints, completion, Undo after completion, Reset, editor Cancel, malformed and unsolvable imports, valid board exchange, and switching boards.
-- Opening both workshop guides and using arrow keys within them preserved the move count and history.
-- At a 390 × 844 viewport, the page had no horizontal overflow, the corner rings and legend remained legible, and direction buttons measured 58 × 48 pixels.
-- The browser exposed the starting cell as a named image with its visited-stop label. A physical touchscreen and screen-reader-only play were not tested.
-
-These checks establish software behavior, not whether the marks help a person understand the puzzle. Human evidence remains pending, so the PR stays in draft.
+The student chose progressive hints and supplied the design goal before this
+change was built. Codex implemented the sequence and organized a proposed
+test plan and conditional interpretations for student review. No human
+observations or feelings are invented. The PR remains in draft.
 
 ## Sources
 
-- Jesse Schell, *The Art of Game Design: A Book of Lenses*, third edition (A K Peters/CRC Press, 2019), Chapter 14, pp. 251–265. Puzzle Principle 3 and Lens 55: Visible Progress, p. 258; Lens 58: The Puzzle, p. 265. Quotation and page references verified in Columbia's licensed third edition on October 18, 2026. [Chapter DOI](https://doi.org/10.1201/b22101-14) · [Columbia library access](https://clio.columbia.edu/catalog/on1118981796). This does not claim the student has completed the reading.
-- [Course exercise: visible progress](https://github.com/columbia-university-ai-games/game-dev-f26/blob/main/minigames/EXERCISES.md).
-- Eric Zimmerman, *The Rules We Break*, exercise 11, Get Out! Reference-game attribution and original course boards are retained in `README.md` and the game.
+- Jesse Schell, *The Art of Game Design: A Book of Lenses*, third edition,
+  Chapter 14, Principle 8, p. 263; Lens 58: The Puzzle, p. 265. Verified in the
+  full publisher PDF accessed through Columbia Libraries. These are PDF pages
+  306 and 308. [Chapter DOI](https://doi.org/10.1201/b22101-14) ·
+  [Columbia library access](https://clio.columbia.edu/catalog/on1118981796).
+- [Course hints exercise](https://github.com/columbia-university-ai-games/game-dev-f26/blob/main/minigames/EXERCISES.md).
+- Eric Zimmerman, *The Rules We Break*, exercise 11, Get Out! Reference-game
+  attribution and original course boards remain in `README.md` and the game.

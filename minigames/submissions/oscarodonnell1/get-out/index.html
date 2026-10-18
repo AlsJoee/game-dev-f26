@@ -2,9 +2,9 @@
 <html lang="en">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Get Out! · Visited stopping places</title>
+<title>Get Out! · Progressive hints</title>
 <link rel="stylesheet" href="style.css">
-<script src="engine.js" defer></script><script src="levels.js" defer></script><script src="exploration.js" defer></script><script src="app.js" defer></script>
+<script src="engine.js" defer></script><script src="levels.js" defer></script><script src="hints.js" defer></script><script src="app.js" defer></script>
 </head>
 <body>
 <header class="masthead"><a class="brand" href="./">GAME LAB <span>/ 05</span></a><span class="course">AI IN PRACTICE · COLUMBIA</span></header>
@@ -14,10 +14,16 @@
 <section class="play-panel" aria-label="Puzzle play area">
 <div class="board-heading"><div><p class="eyebrow" id="level-number">PUZZLE 01 / 04</p><h2 id="level-title">Find your feet</h2></div><div class="counter"><strong id="moves">0</strong><span>MOVES</span></div></div>
 <div id="board" class="board" tabindex="0" role="group" aria-label="Puzzle board. Use arrow keys to move."></div>
-<div class="legend"><span><i class="you-key"></i>You</span><span><i class="exit-key"></i>Exit</span><span><i class="wall-key"></i>Wall</span><span><i class="start-key"></i>Start</span><span><i class="visited-key" aria-hidden="true"></i>Visited stopping places</span></div>
-<p class="small exploration-note">The rings remember where you stopped. Revisiting a marked square is allowed. Undo keeps the marks; Reset clears them.</p>
+<div class="legend"><span><i class="you-key"></i>You</span><span><i class="exit-key"></i>Exit</span><span><i class="wall-key"></i>Wall</span><span><i class="start-key"></i>Start</span></div>
 <p id="status" role="status" aria-live="polite">Find a stopping point that helps you reach the exit.</p>
-<div class="play-actions"><button id="undo" class="secondary">↶ Undo</button><button id="reset" class="secondary">↺ Reset</button><button id="hint" class="secondary">One hint</button><button id="next" class="primary" hidden>Next puzzle →</button></div>
+<div class="play-actions"><button id="undo" class="secondary">↶ Undo</button><button id="reset" class="secondary">↺ Reset</button><button id="next" class="primary" hidden>Next puzzle →</button></div>
+<section id="hint-panel" class="hint-panel" aria-labelledby="hint-title">
+<h3 id="hint-title">Need a nudge?</h3>
+<p class="small">Start with a question. Ask for a clue or a move when you want more help.</p>
+<ol id="hint-list" aria-live="polite" aria-relevant="additions"></ol>
+<button id="hint" class="secondary">Ask a question</button>
+<p class="small hint-reset-note">A successful move or Undo starts a fresh hint sequence.</p>
+</section>
 </section>
 <aside>
 <section class="side-card"><p class="eyebrow">YOUR NEXT MOVE</p><div class="dpad" aria-label="Direction controls"><button data-move="up" aria-label="Move up">↑</button><button data-move="left" aria-label="Move left">←</button><button data-move="down" aria-label="Move down">↓</button><button data-move="right" aria-label="Move right">→</button></div><p id="prompt" class="thought"></p><label for="levels">Choose a puzzle</label><select id="levels"></select></section>

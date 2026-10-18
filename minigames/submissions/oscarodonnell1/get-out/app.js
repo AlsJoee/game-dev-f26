@@ -1,9 +1,9 @@
 (function () {
   'use strict';
-  const $ = id => document.getElementById(id), game = GetOut, levels = GetOutLevels, exploration = GetOutExploration;
+  const $ = id => document.getElementById(id), game = GetOut, levels = GetOutLevels, nudges = GetOutHints;
   const arrows = {up:'↑',right:'→',down:'↓',left:'←'};
   let levelIndex = 0, state, history = [], trace = [], hints = 0, editing = false, draft;
-  let title = '', prompt = '', initialBoard, visitedStops;
+  let title = '', prompt = '', initialBoard, revealedHints = [], renderedHints;
   for (const [i,level] of levels.entries()) {
     const option = document.createElement('option'); option.value = i;
     option.textContent = `${i+1}. ${level.name}`; $('levels').append(option);
@@ -12,7 +12,7 @@
   function announce(message) { $('status').textContent = message; }
   function load(board, name, thought, index) {
     state=game.create(board);initialBoard=board.slice();history=[];trace=[];hints=0;
-    visitedStops=exploration.start(state);
+    revealedHints=[];
     title=name;prompt=thought;levelIndex=index;editing=false;
     customOption.disabled=index!==null;$('levels').value=index===null?'custom':String(index);
     renderBoard();refresh();announce('Choose a direction. The walls are your stopping points.');
@@ -22,32 +22,30 @@
     $('level-title').textContent=editing?'Design a way out':title;$('moves').textContent=state.moves;
     $('prompt').textContent=prompt;$('editor').hidden=!editing;$('edit').hidden=editing;
     $('undo').disabled=editing||history.length===0;$('reset').disabled=editing;
-    $('hint').disabled=editing||state.won;$('next').hidden=editing||!state.won||levelIndex===null||levelIndex===levels.length-1;
+    $('hint').disabled=editing||state.won||revealedHints.length===3;$('next').hidden=editing||!state.won||levelIndex===null||levelIndex===levels.length-1;
+    $('hint-panel').hidden=editing;
+    const hintLabels=['Ask a question','Get a clue',revealedHints[1]?.unreachable?'Show recovery step':'Show a move','Help revealed'];
+    $('hint').textContent=state.won?'Puzzle solved':hintLabels[revealedHints.length];
     document.querySelectorAll('[data-move]').forEach(b=>b.disabled=editing||state.won);
     $('levels').disabled=editing;
     const player=$('board').querySelector('.player');
     if(player){player.style.setProperty('--x',state.position[1]);player.style.setProperty('--y',state.position[0]);}
-    refreshVisitedStops();
+    renderHints();
     $('board').setAttribute('aria-label',editing?'Puzzle editor. Choose a paint tool, then select a square.':`Puzzle board, ${state.board.length} rows and ${state.board[0].length} columns. You are at row ${state.position[0]+1}, column ${state.position[1]+1}. Arrow keys move.`);
     const list=$('trace-list');list.replaceChildren();
     if(!trace.length){const li=document.createElement('li');li.textContent='No moves yet.';list.append(li);}
-    for(const event of trace){const li=document.createElement('li');li.textContent=event.type==='move'?`${arrows[event.action]} ${event.action}: (${event.from[0]+1}, ${event.from[1]+1}) → (${event.to[0]+1}, ${event.to[1]+1})${event.blocked?' · blocked':''}${event.won?' · escaped':''}`:event.type==='hint'?`Hint requested: ${event.message}`:'Undid the previous move.';list.append(li);}
+    for(const event of trace){const li=document.createElement('li');li.textContent=event.type==='move'?`${arrows[event.action]} ${event.action}: (${event.from[0]+1}, ${event.from[1]+1}) → (${event.to[0]+1}, ${event.to[1]+1})${event.blocked?' · blocked':''}${event.won?' · escaped':''}`:event.type==='hint'?`Hint ${event.stage}/3 (${event.kind}): ${event.message}`:'Undid the previous move.';list.append(li);}
   }
-  function refreshVisitedStops() {
-    if(editing)return;
-    const columns=state.board[0].length;
-    $('board').querySelectorAll('.cell').forEach((cell,index)=>{
-      const r=Math.floor(index/columns),c=index%columns,value=state.board[r][c];
-      const visited=exploration.has(visitedStops,[r,c]);
-      const description=value==='#'?'wall':value==='E'?'exit':value==='S'?'start':'floor';
-      cell.classList.toggle('visited-stop',visited);
-      cell.setAttribute('aria-label',`Row ${r+1}, column ${c+1}: ${description}${visited?', visited stopping place':''}`);
-      let mark=cell.querySelector('.stop-mark');
-      if(visited&&!mark){
-        mark=document.createElement('span');mark.className='stop-mark';
-        mark.setAttribute('aria-hidden','true');cell.append(mark);
-      }else if(!visited&&mark)mark.remove();
-    });
+  function renderHints() {
+    if(renderedHints===revealedHints)return;
+    const list=$('hint-list');
+    if(!revealedHints.length)list.replaceChildren();
+    else for(const hint of revealedHints.slice(list.children.length)){
+      const item=document.createElement('li'),label=document.createElement('strong');
+      label.textContent=`${{question:'Question',clue:'Clue',move:'Move',recovery:'Recovery'}[hint.kind]}: `;
+      item.append(label,document.createTextNode(hint.message));list.append(item);
+    }
+    renderedHints=revealedHints;
   }
   function renderBoard() {
     const board=$('board'), rows=editing?draft:state.board;
@@ -76,7 +74,8 @@
     if(editing||state.won)return;
     const previous=state,next=game.step(state,action);
     trace.push({type:'move',action,from:previous.position.slice(),to:next.position.slice(),blocked:next===previous,won:next.won});
-    if(next!==previous){visitedStops=exploration.recordMove(visitedStops,previous,next);history.push(previous);state=next;}
+    revealedHints=nudges.afterMove(previous,next,revealedHints);
+    if(next!==previous){history.push(previous);state=next;}
     refresh();
     if(state.won)announce(`You got out in ${state.moves} moves${hints?`, with ${hints} hint${hints===1?'':'s'}`:''}. What made the route click?`);
     else if(next===previous)announce(`Blocked ${action}. Try another direction; your move count stays the same.`);
@@ -95,12 +94,15 @@
     if(Math.max(Math.abs(dx),Math.abs(dy))>20)move(Math.abs(dx)>Math.abs(dy)?(dx>0?'right':'left'):(dy>0?'down':'up'));
   });
   $('board').addEventListener('pointercancel',()=>startTouch=null);
-  $('undo').addEventListener('click',()=>{if(history.length){state=history.pop();trace.push({type:'undo'});refresh();announce('Move undone. Try another route.');}});
+  $('undo').addEventListener('click',()=>{if(history.length){state=history.pop();revealedHints=[];trace.push({type:'undo'});refresh();announce('Move undone. Try another route.');}});
   $('reset').addEventListener('click',()=>load(initialBoard,title,prompt,levelIndex));
   $('hint').addEventListener('click',()=>{
-    const path=game.solve(state);hints++;
-    const message=path===null?'There is no route from here. Undo a move or reset.':`Try ${arrows[path[0]]} ${path[0]}.`;
-    trace.push({type:'hint',message});refresh();announce(message);
+    if(editing||state.won)return;
+    const next=nudges.reveal(state,revealedHints);
+    if(next===revealedHints)return;
+    revealedHints=next;hints++;
+    const hint=next[next.length-1];
+    trace.push({type:'hint',...hint,position:state.position.slice()});refresh();
   });
   function loadLevel(i){const level=levels[i];load(level.board,level.name,level.prompt,i);}
   $('next').addEventListener('click',()=>loadLevel(levelIndex+1));
