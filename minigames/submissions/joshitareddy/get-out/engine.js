@@ -131,7 +131,10 @@
     }
     return null;
   }
-  const api = {create, step, legalActions, observe, revealBreakables, solve};
+  function keepSolvable(state, initialState) {
+    return solve(state) === null ? {state: initialState, reset: true} : {state, reset: false};
+  }
+  const api = {create, step, legalActions, observe, revealBreakables, solve, keepSolvable};
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.GetOut = api;
 })(globalThis);

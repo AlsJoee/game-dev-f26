@@ -18,17 +18,26 @@ hit or revealed by a hint, and searches wall health as part of the solver state.
 `levels.js` now has seven puzzles. The last three require breaking a wall,
 preserving a wall as a stopping point, then combining both decisions. `app.js`,
 `index.html`, and `style.css` present the interaction and exact remaining-hit
-hints. `docs/rule-source-map.md` records the rules. `tests/engine.test.cjs`
-covers discovery, damage, destruction, refusal, hints, level strategy, rising
-solution lengths, and routes that require repeated hits.
+hints through a control labeled **Hints**. After every move, the solver checks
+the current attempt; if the player has destroyed a wall needed to finish, the
+game announces that no path remains and resets the level. `docs/rule-source-map.md`
+records the rules. `tests/engine.test.cjs` covers discovery, damage, destruction,
+refusal, hints, level strategy, rising solution lengths, repeated hits, and the
+automatic unsolvable-state reset.
 
 Automated result: `python3 scripts/minigames.py test --owner joshitareddy`
-passes (15 tests). The repository suite also passes 43 tests with
+passes (17 tests). The repository suite also passes 43 tests with
 `uv run --frozen python -m unittest discover -s tests -v`, and the offline,
 headless setup check passes. Browser smoke testing completed the combined final
 level in 10 moves with one required wall destroyed and the stopping wall left
 intact. Reveal hints, undo, reset, hidden-wall restoration, and terminal control
 locking were also checked in Chrome.
+
+An automated DOM interaction selects **Keep your footing**, performs the actual
+five-move failure sequence, and verifies the **Hints** label, reset message,
+zeroed move count, empty history, and re-hidden restored wall. A visual browser
+check of this revision remains TODO because native macOS Computer Use and the
+isolated browser were unavailable in the session that added it.
 
 ## Playtest observations
 

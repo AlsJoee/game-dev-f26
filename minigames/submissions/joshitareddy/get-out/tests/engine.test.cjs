@@ -37,7 +37,11 @@ test('every teaching board is solvable and its solution reaches the exit',()=>{
   for(let variation=0;variation<20;variation++){
    const initial=game.create(level.board),solution=game.solve(initial);
    assert.ok(solution && solution.length>0,`${level.name}, variation ${variation+1}`);
-   const final=solution.reduce((s,a)=>game.step(s,a),initial);
+   const final=solution.reduce((s,a)=>{
+    const checked=game.keepSolvable(game.step(s,a),initial);
+    assert.equal(checked.reset,false,`${level.name}, variation ${variation+1}`);
+    return checked.state;
+   },initial);
    assert.equal(final.won,true,`${level.name}, variation ${variation+1}`);
   }
  }
@@ -129,4 +133,16 @@ test('advanced levels require breaking, preserving, then combining both ideas',(
    }
   }
  }
+});
+
+test('an unsolvable move resets the attempt to its initial solvable state',()=>{
+ const level=require('../levels.js')[5];
+ const initial=game.create(level.board,{breakableWalls:level.breakableWalls,random:()=>0});
+ const before=['right','down','right','right'].reduce((state,action)=>game.step(state,action),initial);
+ assert.notEqual(game.solve(before),null);
+ const stranded=game.step(before,'right');
+ assert.equal(game.solve(stranded),null);
+ assert.deepEqual(game.keepSolvable(stranded,initial),{state:initial,reset:true});
+ assert.deepEqual(game.keepSolvable(game.step(initial,'right'),initial),
+  {state:game.step(initial,'right'),reset:false});
 });

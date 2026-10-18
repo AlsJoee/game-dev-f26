@@ -61,6 +61,13 @@
     const hit=next!==previous?next.lastHit:null;
     trace.push({type:'move',action,from:previous.position.slice(),to:next.position.slice(),blocked:next===previous,hit,won:next.won});
     if(next!==previous){history.push(previous);state=next;}
+    const checked=game.keepSolvable(state,initialState);
+    if(checked.reset){
+      state=checked.state;history=[];trace=[];hints=0;
+      renderBoard();refresh();
+      announce('That move left no path to the exit, so this level was reset. Try another route.');
+      return;
+    }
     if(hit)renderBoard();
     refresh();
     if(state.won)announce(`You got out in ${state.moves} moves${hints?`, with ${hints} hint${hints===1?'':'s'}`:''}. What made the route click?`);

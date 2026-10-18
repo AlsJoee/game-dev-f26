@@ -30,6 +30,9 @@ prevent phones from reaching a laptop server. Hosting is not configured here.
 - Hitting a breakable wall spends a move, reveals its remaining strength, and
   opens the cell when its strength reaches zero. Solid-wall hits change nothing.
 - Undo reverses a successful move; reset starts a fresh attempt and trace.
+- After each move, the game checks whether the exit is still reachable. If a
+  destroyed wall leaves no route, the game explains the problem and resets the
+  level with its original hidden walls and strengths.
 - Optional hints reveal every unbroken breakable wall and its remaining hits.
   Hint requests appear in the trace and completion message.
 
@@ -133,6 +136,8 @@ state = game.step(state, 'right');
   unbroken breakable wall and its remaining hits.
 - `solve(state)` returns a shortest direction sequence, `[]` for a won state,
   or `null` if the exit is unreachable. It searches positions and wall health.
+- `keepSolvable(state, initialState)` returns the current state when a route
+  remains, or signals a reset and restores the initial state when none remains.
 
 `solve` is the instructor reference and hint provider. A future model player
 should receive only observations and submit actions through a bounded runner;
@@ -148,14 +153,17 @@ the visible trace uses one-based coordinates. Reset begins a new trace.
 From the repository root, with Node installed:
 
 ```sh
-node --test minigames/submissions/joshitareddy/get-out/tests/engine.test.cjs
+node --test minigames/submissions/joshitareddy/get-out/tests/*.cjs
 ```
 
 The rules tests also cover hidden walls, randomized durability, reveal hints,
-ordinary-wall refusals, and solutions that require repeated wall hits.
+ordinary-wall refusals, solutions that require repeated wall hits, and automatic
+recovery after a move makes the exit unreachable.
 
 Browser smoke check: hit walls until one reveals, undo the hit, reset and check
 that the same walls are hidden again, request a reveal hint, and finish a board.
+On **Keep your footing**, deliberately destroy the stopping wall and confirm the
+game announces that no path remains and resets the level.
 Then edit a wall, play the custom board, export and reload its code, reject an
 unsolvable code, and download a trace. Repeat movement with phone controls and
 confirm the page fits the screen.
