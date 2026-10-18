@@ -18,7 +18,13 @@ The marks say where the player has stopped. They do not measure closeness to the
 
 ## Design and playtesting
 
-**Decisions:** Add visible marks to visited stopping places. The student selected this experiment to investigate whether an exploration record helps players recognize repeated routes. It applies the course's visible-progress exercise, based on Schell Chapter 14 and Lens 58: The Puzzle.
+**Decisions:** Add visible marks to visited stopping places. The student selected this experiment to investigate whether an exploration record helps players recognize repeated routes. The chosen idea is Puzzle Principle 3 in Schell's Chapter 14: giving a sense of progress. In the third edition, this principle and Lens 55 (Visible Progress) appear on page 258. Schell writes:
+
+> Players need to see that they are making progress when solving a difficult problem.
+
+Source: Jesse Schell, *The Art of Game Design: A Book of Lenses*, third edition (2019), Chapter 14, p. 258. [Chapter DOI](https://doi.org/10.1201/b22101-14).
+
+Lens 58 (The Puzzle), on page 265, asks designers to identify which puzzle principles apply to their puzzles. Here the rings make exploration visible. Whether that helps the player understand the route is the question being tested. The marks do not show distance to the solution.
 
 **Possible outcomes:** A player may recognize a loop and deliberately try another direction. That would suggest the record helps orientation. A player may ignore the marks or treat a visited square as a mistake. That would suggest the display is unclear or discourages useful revisiting. Fewer moves alone would not establish better understanding.
 
@@ -36,7 +42,7 @@ TODO: Add the student's interpretation after human play. Compare the observation
 
 ## AI assistance and human decisions
 
-The student chose the route-history experiment and approved the scope and prediction before implementation. Codex scaffolded the copy, implemented the markers and tests, and organized the approved plan into this report. The student's human-playtest observations and interpretation remain pending. The current CourseWorks assignment does not require a separate AI-use disclosure.
+The student chose the route-history experiment and approved the scope and prediction before implementation. Codex scaffolded the copy, implemented the markers and tests, and organized the approved plan into this report. At the student's request, Codex then verified the quotation and page references directly in the third-edition chapter through Columbia Libraries. The student's human-playtest observations and interpretation remain pending. The current CourseWorks assignment does not require a separate AI-use disclosure.
 
 ## Independent review and checks
 
@@ -56,6 +62,6 @@ These checks establish software behavior, not whether the marks help a person un
 
 ## Sources
 
-- Jesse Schell, *The Art of Game Design*, third edition, Chapter 14 and Lens 58: The Puzzle. The design uses the course guide's visible-progress application; no book quotation or claim of completed student reading is made.
+- Jesse Schell, *The Art of Game Design: A Book of Lenses*, third edition (A K Peters/CRC Press, 2019), Chapter 14, pp. 251–265. Puzzle Principle 3 and Lens 55: Visible Progress, p. 258; Lens 58: The Puzzle, p. 265. Quotation and page references verified in Columbia's licensed third edition on October 18, 2026. [Chapter DOI](https://doi.org/10.1201/b22101-14) · [Columbia library access](https://clio.columbia.edu/catalog/on1118981796). This does not claim the student has completed the reading.
 - [Course exercise: visible progress](https://github.com/columbia-university-ai-games/game-dev-f26/blob/main/minigames/EXERCISES.md).
 - Eric Zimmerman, *The Rules We Break*, exercise 11, Get Out! Reference-game attribution and original course boards are retained in `README.md` and the game.
