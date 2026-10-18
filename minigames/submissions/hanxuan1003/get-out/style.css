@@ -9,3 +9,6 @@
 .cell.gate-open{background:#fff3df;color:#755130;outline:3px dashed #966b39;outline-offset:-6px}
 .cell.switch{background:#e4d9f3;color:#532d7f}
 .gate-status{font-weight:800;letter-spacing:.06em;background:#efe6d6;padding:12px;border-radius:8px}
+
+/* Frame-based sliding preserves the piece and synchronizes gate crossings. */
+.player.sliding{transition:none}

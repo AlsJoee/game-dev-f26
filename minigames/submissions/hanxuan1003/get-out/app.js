@@ -4,6 +4,7 @@
   const arrows = {up:'↑',right:'→',down:'↓',left:'←'};
   let levelIndex = 0, state, history = [], trace = [], hints = 0, editing = false, draft;
   let title = '', prompt = '', initialBoard;
+  let animating = false, animationFrame = null;
   for (const [i,level] of levels.entries()) {
     const option = document.createElement('option'); option.value = i;
     option.textContent = `${i+1}. ${level.name}`; $('levels').append(option);
@@ -11,6 +12,7 @@
   const customOption=document.createElement('option');customOption.value='custom';customOption.textContent='Your puzzle';customOption.disabled=true;$('levels').append(customOption);
   function announce(message) { $('status').textContent = message; }
   function load(board, name, thought, index) {
+    cancelAnimation();
     state=game.create(board);initialBoard=board.slice();history=[];trace=[];hints=0;
     title=name;prompt=thought;levelIndex=index;editing=false;
     customOption.disabled=index!==null;$('levels').value=index===null?'custom':String(index);
@@ -21,10 +23,12 @@
     $('level-title').textContent=editing?'Design a way out':title;$('moves').textContent=state.moves;
     $('gate-status').textContent=(editing?0:state.phase)===0?'A CLOSED · B OPEN':'A OPEN · B CLOSED';
     $('prompt').textContent=prompt;$('editor').hidden=!editing;$('edit').hidden=editing;
-    $('undo').disabled=editing||history.length===0;$('reset').disabled=editing;
-    $('hint').disabled=editing||state.won;$('next').hidden=editing||!state.won||levelIndex===null||levelIndex===levels.length-1;
-    document.querySelectorAll('[data-move]').forEach(b=>b.disabled=editing||state.won);
+    $('undo').disabled=editing||animating||history.length===0;$('reset').disabled=editing;
+    $('hint').disabled=editing||animating||state.won;$('next').hidden=editing||!state.won||levelIndex===null||levelIndex===levels.length-1;
+    document.querySelectorAll('[data-move]').forEach(b=>b.disabled=editing||animating||state.won);
     $('levels').disabled=editing;
+    $('edit').disabled=animating;$('import').disabled=animating;
+    updateGates(editing?0:state.phase);
     const player=$('board').querySelector('.player');
     if(player){player.style.setProperty('--x',state.position[1]);player.style.setProperty('--y',state.position[0]);}
     $('board').setAttribute('aria-label',editing?'Puzzle editor. Choose a paint tool, then select a square.':`Puzzle board, ${state.board.length} rows and ${state.board[0].length} columns. You are at row ${state.position[0]+1}, column ${state.position[1]+1}. Arrow keys move.`);
@@ -55,15 +59,52 @@
     }
     if(!editing){const player=document.createElement('div');player.className='player';player.setAttribute('aria-hidden','true');const dot=document.createElement('span');dot.textContent='••';player.append(dot);board.append(player);}
   }
+  function updateGates(phase) {
+    $('gate-status').textContent=phase===0?'A CLOSED · B OPEN':'A OPEN · B CLOSED';
+    $('board').querySelectorAll('.gate').forEach(cell=>{
+      const value=cell.textContent,closed=game.isBlocked(value,phase);
+      cell.classList.toggle('gate-closed',closed);cell.classList.toggle('gate-open',!closed);
+      cell.setAttribute('aria-label',cell.getAttribute('aria-label').replace(/closed|open/g,closed?'closed':'open'));
+    });
+  }
+  function cancelAnimation() {
+    if(animationFrame!==null)cancelAnimationFrame(animationFrame);
+    animationFrame=null;animating=false;
+    $('board').querySelector('.player')?.classList.remove('sliding');
+  }
   function move(action) {
-    if(editing||state.won)return;
+    if(editing||animating||state.won)return;
     const previous=state,next=game.step(state,action);
-    trace.push({type:'move',action,from:previous.position.slice(),to:next.position.slice(),blocked:next===previous,won:next.won,phaseBefore:previous.phase,phaseAfter:next.phase});
-    if(next!==previous){history.push(previous);state=next;}
-    renderBoard();refresh();
-    if(state.won)announce(`You got out in ${state.moves} move${state.moves===1?'':'s'}${hints?`, with ${hints} hint${hints===1?'':'s'}`:''}. What made the route click?`);
-    else if(next===previous)announce(`Blocked ${action}. Try another direction; your move count stays the same.`);
-    else announce(`${next.phase!==previous.phase?'Switch crossed: doors changed. ':''}Slid ${action}. Row ${state.position[0]+1}, column ${state.position[1]+1}. Choose your next stopping point.`);
+    function finish() {
+      cancelAnimation();
+      trace.push({type:'move',action,from:previous.position.slice(),to:next.position.slice(),blocked:next===previous,won:next.won,phaseBefore:previous.phase,phaseAfter:next.phase});
+      if(next!==previous){history.push(previous);state=next;}
+      refresh();
+      if(state.won)announce(`You got out in ${state.moves} move${state.moves===1?'':'s'}${hints?`, with ${hints} hint${hints===1?'':'s'}`:''}. What made the route click?`);
+      else if(next===previous)announce(`Blocked ${action}. Try another direction; your move count stays the same.`);
+      else announce(`${next.phase!==previous.phase?'Switch crossed: doors changed. ':''}Slid ${action}. Row ${state.position[0]+1}, column ${state.position[1]+1}. Choose your next stopping point.`);
+    }
+    if(next===previous||matchMedia('(prefers-reduced-motion: reduce)').matches){finish();return;}
+    // Keep the same player element alive: replacing it prevents CSS interpolation.
+    const player=$('board').querySelector('.player');
+    const [r,c]=previous.position,dr=Math.sign(next.position[0]-r),dc=Math.sign(next.position[1]-c);
+    const distance=Math.abs(next.position[0]-r)+Math.abs(next.position[1]-c);
+    const duration=distance*110;
+    let start=null,crossed=0,phase=previous.phase;
+    animating=true;refresh();player.classList.add('sliding');
+    announce(`Sliding ${action}…`);
+    function frame(time) {
+      if(start===null)start=time;
+      const progress=Math.min(1,(time-start)/duration),travel=progress*distance;
+      player.style.setProperty('--x',c+dc*travel);player.style.setProperty('--y',r+dr*travel);
+      // A switch changes gates when the moving piece reaches that cell's center.
+      while(crossed<Math.floor(travel)) {
+        crossed++;
+        if(previous.board[r+dr*crossed][c+dc*crossed]==='T'){phase=1-phase;updateGates(phase);}
+      }
+      if(progress<1)animationFrame=requestAnimationFrame(frame);else finish();
+    }
+    animationFrame=requestAnimationFrame(frame);
   }
   document.querySelectorAll('[data-move]').forEach(b=>b.addEventListener('click',()=>move(b.dataset.move)));
   document.addEventListener('keydown',e=>{
@@ -78,9 +119,10 @@
     if(Math.max(Math.abs(dx),Math.abs(dy))>20)move(Math.abs(dx)>Math.abs(dy)?(dx>0?'right':'left'):(dy>0?'down':'up'));
   });
   $('board').addEventListener('pointercancel',()=>startTouch=null);
-  $('undo').addEventListener('click',()=>{if(history.length){state=history.pop();trace.push({type:'undo'});renderBoard();refresh();announce('Move undone. Try another route.');}});
+  $('undo').addEventListener('click',()=>{if(!animating&&history.length){state=history.pop();trace.push({type:'undo'});renderBoard();refresh();announce('Move undone. Try another route.');}});
   $('reset').addEventListener('click',()=>load(initialBoard,title,prompt,levelIndex));
   $('hint').addEventListener('click',()=>{
+    if(animating)return;
     const path=game.solve(state);hints++;
     const message=path===null?'There is no route from here. Undo a move or reset.':`Try ${arrows[path[0]]} ${path[0]}.`;
     trace.push({type:'hint',message});refresh();announce(message);
@@ -92,6 +134,7 @@
   $('cancel-edit').addEventListener('click',()=>{editing=false;renderBoard();refresh();announce('Back to your puzzle.');});
   $('blank').addEventListener('click',()=>{draft=Array.from({length:7},()=>Array(7).fill('.'));draft[0][0]='S';draft[6][6]='E';renderBoard();refresh();announce('A fresh 7 × 7 board. Add walls to make a route.');});
   function loadCustom(rows){
+    if(animating)return;
     const candidate=game.create(rows);
     if(game.solve(candidate)===null)throw new Error('This board has no route to the exit. Change a wall, start, or exit and try again.');
     load(rows,'Your puzzle','What will your partner discover?',null);
