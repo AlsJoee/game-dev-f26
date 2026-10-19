@@ -20,6 +20,7 @@
     $('level-number').textContent=editing?'PUZZLE WORKSHOP':levelIndex===null?'YOUR PUZZLE':`PUZZLE ${String(levelIndex+1).padStart(2,'0')} / ${String(levels.length).padStart(2,'0')}`;
     $('level-title').textContent=editing?'Design a way out':title;$('moves').textContent=state.moves;
     $('optimal-moves').textContent=optimalMoves===null?'—':optimalMoves;
+    const remaining=game.solve(state);$('remaining-moves').textContent=remaining===null?'—':remaining.length;
     $('prompt').textContent=prompt;$('editor').hidden=!editing;$('edit').hidden=editing;
     $('undo').disabled=editing||history.length===0;$('reset').disabled=editing;
     $('hint').disabled=editing||state.won;$('next').hidden=editing||!state.won||levelIndex===null||levelIndex===levels.length-1;
