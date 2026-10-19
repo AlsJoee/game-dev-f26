@@ -4,8 +4,7 @@ Principle: parallelism
 
 ## Prediction (student writes before building)
 
-TODO: Describe one design change, the player behavior you predict, and what
-observation would make you question that prediction.
+Design change: the player now controls two tiles (the original player tile and the exit) and the goal is still to make them meet. The movement mechanism stayes the same (aka has to be stopped by wall). The expectation is that because there will be more moving pieces, the same level will take longer for the player to finish. 
 
 ## Implementation
 
@@ -21,20 +20,15 @@ Browser checks remain to be done.
 
 ## Playtest observations
 
-TODO: Record anonymous player labels, board, version and order played, hints
-requested, restarts, completion, and one revealing action or remark. Separate
-observations from interpretations. No names, emails, or other personal data.
+It turns out one can just push one of the two tiles to a corder and then move the other tile towards it. Some puzzles are trivialized this way. 
 
 ## Interpretation and revision (student writes)
 
-TODO: Compare the evidence with the prediction. Mention prior familiarity,
-practice effects, sample size, or other limits. Describe the revision made or
-one next test. A single player's response supports a question, not a general claim.
+The player behavior and the expectation was rather the opposite. This might mean this idea was flawed to start with, or that it requires completely different board design. Or, this might mean different board disigns are required to make the new version more engaging, because the baord for the original game are designed in such a way that, the placement of the exit tile and the mvoement mecahnism of the player tile forces the player to be strategic about their movement.s
 
 ## AI assistance and human decisions (student writes)
 
-TODO: State what Codex generated, what you checked, and one design decision you
-retained or changed. Include any remaining known issues.
+Codex generated code changes for the deliverable. I manually play the game after each iterations. One problem was the green coloring of the board grid was not moving with the exit sign and that has to be fixed. 
 
 ## Independent review
 
