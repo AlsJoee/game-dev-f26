@@ -27,7 +27,7 @@
     $('undo').disabled=editing||history.length===0;$('reset').disabled=editing;
     $('hint').disabled=editing||state.won;$('hint').textContent=`Hint ${hintLevel} of 3: ${hintNames[hintLevel]}`;
     $('board').querySelectorAll('.hint-feature').forEach(el=>el.classList.remove('hint-feature'));
-    for(const [r,c] of hintCells){const el=$('board').querySelectorAll('.cell')[r*state.board[0].length+c];if(el)el.classList.add('hint-feature');}$('next').hidden=editing||!state.won||levelIndex===null||levelIndex===levels.length-1;
+    if(!editing)for(const [r,c] of hintCells){const el=$('board').querySelectorAll('.cell')[r*state.board[0].length+c];if(el)el.classList.add('hint-feature');}$('next').hidden=editing||!state.won||levelIndex===null||levelIndex===levels.length-1;
     document.querySelectorAll('[data-move]').forEach(b=>b.disabled=editing||state.won);
     $('levels').disabled=editing;
     const player=$('board').querySelector('.player');

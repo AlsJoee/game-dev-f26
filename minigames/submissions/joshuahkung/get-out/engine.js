@@ -61,11 +61,11 @@
     if (level === 1) return {level, message: 'Where could you stop that you have not stopped yet? Every wall is a possible stopping point.'};
     if (level === 3) return {level, action, message: `Try ${action}.`};
     const next = step(state, action), [dr, dc] = directions[action];
-    if (next.won) return {level, feature: {type: 'exit', cell: next.position.slice()}, message: 'The exit is one slide away. Which direction reaches it?'};
+    if (next.won) return {level, feature: {type: 'exit', cell: next.position.slice()}, message: `The exit, at row ${next.position[0] + 1}, column ${next.position[1] + 1}, is one slide away. Which direction reaches it?`};
     const [r, c] = [next.position[0] + dr, next.position[1] + dc];
     const inside = r >= 0 && r < state.board.length && c >= 0 && c < state.board[0].length;
-    if (!inside) return {level, feature: {type: 'border', cell: next.position.slice()}, message: 'The highlighted square is your next stop: the board edge stops you there.'};
-    return {level, feature: {type: 'wall', cell: [r, c]}, message: 'The highlighted wall is the one your next slide should stop against.'};
+    if (!inside) return {level, feature: {type: 'border', cell: next.position.slice()}, message: `The highlighted square, row ${next.position[0] + 1}, column ${next.position[1] + 1}, is your next stop: the board edge stops you there.`};
+    return {level, feature: {type: 'wall', cell: [r, c]}, message: `The highlighted wall, row ${r + 1}, column ${c + 1}, is the one your next slide should stop against.`};
   }
   const api = {create, step, legalActions, observe, solve, hint};
   if (typeof module !== 'undefined' && module.exports) module.exports = api;

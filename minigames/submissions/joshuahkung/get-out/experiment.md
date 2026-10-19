@@ -60,4 +60,12 @@ from the predictions above.
 - Browser check, desktop and 390 px phone width: levels advance 1→2→3, the
   wall highlights on level 2, and a move resets to level 1. No horizontal
   scroll, no console errors.
-- Known limit: level 1's question is the same on every board.
+- Known limit: level 1's question is the same on every board. Level 2 names the row and column for screen readers; the level-2 outline stays visible at level 3 by design.
+
+## Independent review
+
+A separate Claude review of the folder found two issues: the hint highlight could
+appear on the wrong square while editing a board, and level 2 relied on a visual
+highlight alone. Both are fixed: the highlight is suppressed in the editor, and
+level 2 now names the row and column. Tests and the browser check were rerun
+after the fixes.
