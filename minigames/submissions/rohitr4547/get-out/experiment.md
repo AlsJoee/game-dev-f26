@@ -126,43 +126,42 @@ student's request.
 
 ## Playtest observations
 
-No playtest with another player yet, so there are no observations to report
-here. Everything in this file and the PR is a prediction.
+One player so far. Player A tried the moving-roadblock version of the
+teaching boards. Player A co-designed the swap rule in #12, so they already
+knew the swap and the reference boards. They weren't new to the game, only to
+the roadblock. No trace file was saved, so there are no move counts.
 
-Plan for the first session: Player A gets only the rule card, plays boards 1
-to 3 in order, and I don't coach. Teaching boards use a fixed seed, so
-everyone sees the same jumps. I'll download the trace after each board and
-note:
+What happened:
 
-- what they do on the first jump;
-- whether they look at the sign before moving;
-- whether they ever stop against it on purpose (`roadblock: true` on a move
-  that wasn't blocked);
-- undo, hint, reset, and New roadblock counts;
-- whether they finish.
-
-Afterwards I'll ask "What were you trying to do?" and "Could you tell where
-the roadblock would go next?" Observations go in a PR comment with anonymous
-labels.
+- Player A finished board 2. They didn't finish the other boards they tried.
+- The roadblock's jumps felt random to them the whole time. They didn't get
+  to the point of predicting where it would go next.
+- They did stop against the sign on purpose, using it as a stopping point.
+- They didn't use hints, undo, reset, or New roadblock.
 
 ## Interpretation and revision
 
-There's no player evidence yet, so I can't say whether the prediction held.
-What I can say from building it:
+With one player, the prediction half held.
 
-- The rule definitely makes the boards harder. Board 4 went from 3 moves to 9
-  with its fixed seed. A longer route doesn't automatically mean a better
-  puzzle, though; it could just mean more frustrating.
-- My biggest worry is that the jump feels random. It's actually deterministic
-  (the seed plus where the ball and exit are), but a player can't see that.
-  If the playtest shows people guessing, my next revision would be a faint
-  preview of where the sign will land, so it reads like a rule.
-- If players do use the sign as a stopper, I'd keep the rule and design new
-  boards where stopping against it is the key move.
+- **The part that held:** Player A used the sign as a stopper on purpose.
+  That's the "the thing blocking you is something you can use" moment the
+  whole design is built around, so the core idea can land.
+- **The part that didn't:** I predicted players would start reading the board
+  after each jump. Instead the jumps felt random to Player A the whole time.
+  That's my Alternative 1. The rule is deterministic, but that doesn't help
+  if a player can't see it.
+- **Difficulty:** finishing only board 2 suggests the boards are a lot harder
+  now. Board 4 went from 3 moves to 9 with its fixed seed. Not using hints
+  or undo might mean they kept trying on their own, or just didn't think of
+  them. I can't tell which from my notes.
 
-Limits to keep in mind: most classmates have played the reference boards
-already, one or two players can only raise questions rather than prove
-anything, and the fixed seeds mean everyone sees one sequence per board.
+Limits: one player, who already knew the swap rule and the boards, and no
+trace data. This raises questions more than it answers them.
+
+Revision: keep the moving roadblock, since the useful-obstacle moment showed
+up. Next I'd add a faint preview of where the sign will land after the next
+move, so the jump reads like a rule and not luck. Then test it with someone
+who hasn't seen the game before.
 
 ## AI assistance and human decisions
 
@@ -171,10 +170,6 @@ rajvardhan19 in #12), adding an obstacle with a no-entry traffic sign, having
 it show up from the start, and then having it move every turn while keeping
 the swap. Claude wrote the code, tests, browser checks, and this report, and
 ran the reviews.
-
-What I checked myself: I opened the game locally, read through the rule card,
-and compared it with the original rule text and #12 to make sure the new
-rules were added the same way the swap was.
 
 One decision I changed along the way: the first version put the roadblock in
 one random spot for the whole puzzle. That blocked the route once, but after
@@ -233,8 +228,6 @@ After the fixes: 19 of 19 rules tests, course check, tooling tests, and 24 of
 24 browser checks pass. Code review does not replace human play evidence.
 
 My resolution: I'm keeping the fixes from both reviews, especially the speed
-fix, since a frozen page on a big custom board would wreck a playtest. For the
-first playtest I'm keeping the implementation choices as they are (moves
-every turn, acts like a wall, fixed seeds on the teaching boards). The one
-I'd revisit first is the fixed seed, if players say the boards feel
-memorized rather than readable.
+fix, since a frozen page on a big custom board would wreck a playtest. I'm
+not keeping every choice as-is, though. The playtest says the jumps feel
+random, so the next change is a preview of where the roadblock will land.
