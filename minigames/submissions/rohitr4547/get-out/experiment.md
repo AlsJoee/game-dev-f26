@@ -126,15 +126,20 @@ Checks run (no human playtest yet):
 One player so far. Player A tried the moving-roadblock version of the
 teaching boards. Player A co-designed the swap rule in #12, so they already
 knew the swap and the reference boards. They weren't new to the game, only to
-the roadblock. No trace file was saved, so there are no move counts.
+the roadblock. No trace file was saved, so the move counts below are their
+rough count, not exact numbers.
 
 What happened:
 
-- Player A finished board 2. They didn't finish the other boards they tried.
+- Player A tried most of the four boards and solved each one they tried.
+- Each solve took roughly 20 moves. The shortest routes on those boards (with
+  their fixed seeds) are 6 to 9 moves.
 - The roadblock's jumps felt random to them the whole time. They didn't get
   to the point of predicting where it would go next.
 - They did stop against the sign on purpose, using it as a stopping point.
 - They didn't use hints, undo, reset, or New roadblock.
+- Their suggestion: playing longer on one board would give them a proper idea
+  of how to deal with the roadblock.
 
 ## Interpretation and revision
 
@@ -147,18 +152,25 @@ With one player, the prediction half held.
   after each jump. Instead the jumps felt random to Player A the whole time.
   That's my Alternative 1. The rule is deterministic, but that doesn't help
   if a player can't see it.
-- **Difficulty:** finishing only board 2 suggests the boards are a lot harder
-  now. Board 4 went from 3 moves to 9 with its fixed seed. Not using hints
-  or undo might mean they kept trying on their own, or just didn't think of
-  them. I can't tell which from my notes.
+- **Difficulty:** the boards are solvable without help (no hints), but about
+  20 moves against a shortest route of 6 to 9 looks like trial and error more
+  than planning. That fits the jumps feeling random.
+- **Their suggestion fits the data:** if the jumps can be learned, it would
+  show up on one board played several times, not across four different
+  boards. Reset already replays the same jumps on a board, so this is easy to
+  test.
 
-Limits: one player, who already knew the swap rule and the boards, and no
-trace data. This raises questions more than it answers them.
+Limits: one player, who already knew the swap rule and the boards; rough
+self-reported move counts; and no trace data. This raises questions more than
+it answers them.
 
 Revision: keep the moving roadblock, since the useful-obstacle moment showed
-up. Next I'd add a faint preview of where the sign will land after the next
-move, so the jump reads like a rule and not luck. Then test it with someone
-who hasn't seen the game before.
+up. Next test: a new player plays one board several times with the same jumps
+(Reset), with the trace saved. If their move count drops toward the shortest
+route, the rule is learnable, and the fix is to encourage replaying, for
+example a "play again, same jumps" button after a win. If it stays around 20,
+the jumps really do read as random, and I'd add a faint preview of where the
+sign will land next.
 
 ## Design decisions
 
@@ -224,4 +236,5 @@ After the fixes: 19 of 19 rules tests, course check, tooling tests, and 24 of
 My resolution: I'm keeping the fixes from both reviews, especially the speed
 fix, since a frozen page on a big custom board would wreck a playtest. I'm
 not keeping every choice as-is, though. The playtest says the jumps feel
-random, so the next change is a preview of where the roadblock will land.
+random, so next I'm testing replay on one board, then a preview of where the
+roadblock will land if replay doesn't help.
