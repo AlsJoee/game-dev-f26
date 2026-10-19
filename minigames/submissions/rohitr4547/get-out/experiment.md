@@ -8,94 +8,117 @@ Starting point: the swap-sides rule from rajvardhan19's variation (class PR
 #12, co-developed by rajvardhan19 and rohitr4547). When a slide misses the
 exit, the ball and the exit trade places.
 
-Design change, in the student's words from the build request: "adding an
+Design change, in the student's words from the build requests: "adding an
 obstacle which shows up from the start and this obstacle can show up at any
 random location to block the path from the start to the end ... while
 preserving the change of swapping locations of the start and end points. The
 obstacle needs to have an icon possibly of a traffic sign indicating no
-movement through that path."
+movement through that path." Then: "this obstacle should be ensured to keep
+changing its position from turn to turn. The previous logic of start and end
+changing has to be maintained."
 
-Draft prediction for the student to confirm or rewrite: the roadblock breaks
-the route a player has memorised or worked out first, so they must re-read the
-board from both the ball's side and the exit's side. Because the roadblock
-stops a slide like a wall, some players should notice that it creates a new
-stopping point and start using it on purpose. An observation that would
-question this: players treat the sign only as "can't go here", route around
-it, and never stop against it on purpose.
+Draft prediction for the student to confirm or rewrite: with the exit and the
+roadblock both moving, a player cannot replay a remembered route. They have to
+re-read the board after every move, from the ball's side, the exit's side, and
+now the roadblock's. Because the roadblock stops a slide like a wall, some
+players should start using it as a stopping point. An observation that would
+question this: players feel the jumps are random noise, press keys hoping for
+luck, and lean on hints.
 
 TODO: Confirm or rewrite the prediction above in your own words.
 
 ## Implementation
 
-**Rule change.** A new square type, the no-entry roadblock (`X`, drawn as a red
-no-entry traffic sign), stops a slide exactly like a wall. It is on the board
-from the first move. The swap rule is unchanged. The exit can never land on
-the roadblock, because the exit only goes where the ball stops.
+**Rule change.** A no-entry roadblock, drawn as a red no-entry traffic sign,
+stops a slide exactly like a wall. It is on the board from the first move.
+After every move that misses the exit, it jumps to a new square on the new
+shortest way out. The swap rule is unchanged.
 
-**Random placement.** When a puzzle loads, `placeRoadblock` finds the current
-shortest route under the swap rule, collects the floor squares the ball slides
-across on it, and picks one at random. It prefers a square that stops the old
-shortest route from working, keeps a square only if the board stays solvable,
-falls back to another floor square if no route square works, and leaves the
-board alone if nothing works. Reset keeps the roadblock; **New roadblock**
-rolls another, on a different square whenever another square works. A board
-code with an `X` keeps it as written. The editor opens on the board without
-its random roadblock.
+**Where it jumps.** From the new ball and exit positions, the game finds the
+shortest way out as if there were no roadblock. It orders the floor squares
+the ball would slide across on that route with a seeded shuffle, then picks:
+
+1. the first square that breaks that route;
+2. otherwise any route square;
+3. otherwise any other floor square.
+
+It never uses the ball's, exit's, or start square, and never stays on the
+square it just left, unless no other free square exists. A blocked move does
+not move it.
+
+**Why seeded, not truly random.** A truly random jump could make the board
+unsolvable mid-game and would make hints meaningless. With a seed, the choice
+depends only on the seed, the ball, the exit, and the previous square. It
+looks random to the player, but the solver can plan around it. The game only
+uses seeds that leave a way out.
+
+**Seeds in the app:**
+
+- Each teaching board has a fixed seed, so every playtester sees the same
+  sequence. Reset replays it.
+- **New roadblock** picks a new random seed that leaves a way out.
+- Custom and imported boards get a random seed.
 
 Choices made while implementing, for the student to confirm or change:
 
-- One roadblock per puzzle, fixed until **New roadblock** or a new puzzle
-  (it does not move each turn).
-- It stops the ball like a wall rather than, for example, bouncing it back.
-- Placement always keeps the board solvable, so hints still work.
+- The roadblock jumps after every move, but not on blocked moves.
+- It acts like a wall rather than doing something new.
+- Teaching boards use a fixed sequence for comparable playtests.
+- Board codes no longer carry a roadblock; the game always places it.
+- A board with no solvable sequence plays without a roadblock and says so.
 
-Effect on the four teaching boards (300 random placements each; shortest
-route under swap only → with roadblock):
+Effect on the four teaching boards (shortest route; 100 seeds per board):
 
-| Board | Swap only | With roadblock | Distinct roadblock squares |
-|---|---|---|---|
-| 1. Find your feet | 4 | 7 (21%) or 9 (79%) | 4 |
-| 2. Take the long way | 5 | 4 (10%) or 6 (90%) | 11 |
-| 3. Change direction | 7 | 4 to 9 (7 most often, 53%) | 16 |
-| 4. A useful detour | 3 | 4 (100%) | 2 |
+| Board | Swap only | Fixed seed | Seeds that leave a way out | Route range over 100 seeds |
+|---|---|---|---|---|
+| 1. Find your feet | 4 | 6 | 83 | 5 to 11 |
+| 2. Take the long way | 5 | 7 | 100 | 5 to 9 |
+| 3. Change direction | 7 | 7 | 94 | 5 to 11 |
+| 4. A useful detour | 3 | 9 | 100 | 3 to 10 |
 
-In all 1,200 placements the old shortest route no longer reaches the exit.
-The roadblock can still make a board *shorter* (board 2 at 4 moves, board 3
-at 4 to 6), because it gives the ball a new place to stop. That is the "useful
-obstacle" moment the prediction is about.
+In random play on the teaching boards, the roadblock changed square on
+10,009 of 10,009 moves that missed the exit.
 
 Changed files, all in this folder (starting from the swap variation):
 
-- `engine.js`: `X` is a valid square that stops slides; a shared `slide`
-  helper lists the squares a slide crosses; new
-  `placeRoadblock(board, random, avoid)`.
-- `tests/engine.test.cjs`: 7 new tests (16 total). Against the swap-only
-  engine, all 7 new tests fail and the 9 existing ones pass.
-- `app.js`: roadblock placed on load, kept on reset, **New roadblock** button,
-  status and trace say when the roadblock stopped a slide, editor tool, trace
-  format `get-out-roadblock-trace-v1` with roadblock positions and whether
-  the roadblock was random or authored.
-- `index.html`, `style.css`: rule card, legend, no-entry sign, discussion
-  prompt, editor and exchange text.
-- `README.md`, `submission.json`: describe the roadblock. `levels.js` is unchanged.
+- `engine.js`: the roadblock is part of the game state; `create(board, seed)`;
+  `step` moves it after each move; a distance table per board makes each jump
+  a lookup; `solve` searches ball, exit, and roadblock; new `solveWithin`
+  (search with a budget) and `solvableSeed`.
+- `tests/engine.test.cjs`: 10 roadblock tests (19 total). They fail against
+  the swap-only engine; the 9 swap tests pass unchanged.
+- `app.js`, `index.html`, `style.css`: the animated roadblock piece, status
+  and trace messages about each jump, New roadblock, fixed seeds for teaching
+  boards, bounded seed search, and hints that give up on huge boards rather
+  than freezing.
+- `serve.py`: a local launcher. Run
+  `python3 minigames/submissions/rohitr4547/get-out/serve.py` from the
+  repository root to serve the game on 127.0.0.1 and open it in a browser.
+- `README.md`, `submission.json`: describe the moving roadblock. `levels.js`
+  is unchanged.
 
 Checks run (no human playtest yet):
 
 - `python3 scripts/minigames.py check --owner rohitr4547`: 1 valid submission.
-- `python3 scripts/minigames.py test --owner rohitr4547`: 16 of 16 pass.
-- `python3 scripts/minigames.py boundary` against class `main`: passes.
-- Course tooling tests: `python3 -m unittest tests.test_minigame_tools` pass.
-- Headless Chrome, 31 of 31 pass: one roadblock with a no-entry sign and an
-  accessible label at start; the first move still swaps; undo and reset keep
-  the roadblock; all four boards completed by following hints; New roadblock
-  always leaves exactly one and never repeats the previous square in 15
-  rolls; an imported `X` stays put and hides New roadblock; moving into the
-  roadblock is blocked, costs no move, and is traced; a slide stopped by it
-  still swaps; a code without `X` gets one; an exit walled in by roadblocks
-  is rejected; a board with no safe square says so; the editor opens without
-  the random roadblock, and Check & play draws a new one; the editor paints
-  one roadblock; phone width (375 px) has no horizontal scroll; no console
-  errors.
+- `python3 scripts/minigames.py test --owner rohitr4547`: 19 of 19 pass.
+- `python3 -m unittest tests.test_minigame_tools`: OK.
+- Headless Chrome against the game served by `serve.py`, 24 of 24 pass:
+  - the roadblock and sign shown at start, with an accessible label;
+  - the first move still swaps, and the roadblock jumps;
+  - the status line and trace report the jump;
+  - undo restores the ball, exit, and roadblock;
+  - reset replays the same sequence;
+  - the roadblock changes square on every move that misses the exit (41 moves
+    across four boards);
+  - all four boards completed by following hints;
+  - board 1 always starts the same;
+  - New roadblock always starts on a different square;
+  - a slide stopped by the roadblock is reported;
+  - a board code with `X` is rejected, and the editor has no roadblock tool;
+  - phone width (375 px) has no horizontal scroll;
+  - no console errors.
+- Speed on random 20 × 20 custom boards: finding a seed took at most 1.7 s,
+  and a hint at most 55 ms.
 
 The implementation and these checks were produced with Claude Code at the
 student's request.
@@ -105,8 +128,8 @@ student's request.
 TODO: Record anonymous player labels, board, version and order played, hints
 requested, restarts, completion, and one revealing action or remark. Separate
 observations from interpretations. No names, emails, or other personal data.
-Useful trace fields: `roadblock: true` events show when a player stopped
-against the roadblock.
+Useful trace fields: `block` after each move, and `roadblock: true` when the
+roadblock stopped a slide.
 
 ## Interpretation and revision (student writes)
 
@@ -117,61 +140,56 @@ one next test. A single player's response supports a question, not a general cla
 ## AI assistance and human decisions (student writes)
 
 TODO: State what you checked, and one design decision you retained or changed
-(for example, the three implementation choices above). Include any remaining
-known issues.
+(for example, the implementation choices above). Include any remaining known
+issues.
 
 Known issues so far:
 
-- Board 4 has only two possible roadblock squares, so New roadblock just
-  alternates between them.
-- On custom boards where no route square works, the roadblock goes on an
-  off-route square and does not block the route. The teaching boards never
-  hit this case (0 of 1,200 placements).
-- Because placement is random, two players can face different routes on the
-  same board. Use a board code with an `X` when you need players to see the
-  same puzzle.
+- Routes get longer (board 4 goes from 3 to 9 moves with its fixed seed),
+  so the boards may now feel much harder.
+- The jump is predictable in principle but not to a player, so it may read as
+  random. That is the main thing the playtest should check.
+- Some seeds leave no way out (17 of 100 on board 1). The game skips them,
+  but a custom board can end up with no roadblock.
+- On very large custom boards, a hint may report "no hint found quickly".
 - Not tested with a screen reader alone.
 
 ## Independent review
 
-Reviewer: a separate, read-only Claude Code review task, given the change
-summary and the repository's `rules-reviewer` checklist. It did not write the
-change. It reran the tests and ran the new tests against the swap-only engine
-(the new tests fail there, as expected). It also fuzzed both engines:
+Two separate, read-only Claude Code review tasks, each given the change
+summary and the repository's `rules-reviewer` checklist. Neither wrote the
+change.
 
-- Swap-only vs this engine on 3,000 boards without a roadblock: 0 differences
-  in 60,000 steps or in solver output, so the swap rule is unchanged.
-- `X` vs `#` on 3,000 boards: 0 differences.
-- `placeRoadblock` on 2,000 boards: 0 inputs mutated and 0 solvable boards
-  made unsolvable.
+**Review 1** covered an earlier version where the roadblock stayed put. It
+fuzzed thousands of boards and found no rule errors. Its six should-fix items
+were fixed before that design was replaced by the moving roadblock.
 
-No blocking findings. Issues found and resolved:
+**Review 2** covered the moving roadblock. It confirmed the rule invariants:
 
-- The editor copied the random roadblock into the new design, where it then
-  counted as authored and hid New roadblock. The editor now opens on the board
-  without it.
-- New roadblock could land on the same square again (50% of the time on board
-  4). It now avoids the previous square whenever another square works.
-- The README, rule card, and editor text claimed the roadblock is always on
-  the shortest route. The off-route fallback is now described.
-- Two fallback paths were untested. Added a test for a solvable board where
-  every square would trap the ball. The other surviving mutant (dropping the
-  solvability check in the off-route fallback) cannot change behaviour: an
-  off-route square never touches a slide on the route, so that check is now
-  commented as a guard.
-- The import message claimed a roadblock even when none could be placed, and
-  the rejection text did not mention roadblocks. Both fixed.
-- The README's editor and board-code sections did not mention `X`. Fixed.
-- Notes also addressed: placement now stops at the first good square (the
-  reviewer's worst random 20 × 20 board took 389 ms before; the worst of 300
-  new random 20 × 20 boards now takes 12 ms), and
-  the trace records whether the roadblock was random or authored. A
-  meaningless invalid-board test case was removed.
+- the roadblock never lands on the ball, exit, start, or a wall;
+- it never reuses the previous square;
+- blocked moves don't move it;
+- the solver's search key is sufficient;
+- undo restores it.
 
-After the fixes: 16 of 16 rules tests, course check, boundary check, tooling
-tests, and 31 of 31 browser checks pass. Code review does not replace human
-play evidence.
+Issues found and resolved:
+
+- **Blocking:** the solver was far too slow on 20 × 20 boards (one solve took
+  155 s). Each jump re-ran a full search. A per-board distance table now makes
+  each jump a lookup, and hints and seed search have a budget. Worst case is
+  now about 1.7 s to start a 20 × 20 custom board, and 55 ms per hint.
+- New roadblock could run up to about 1,000 solves. It is now bounded.
+- Teaching boards gave no message if no seed worked. The status line now says
+  when a board plays without a roadblock.
+- The roadblock could vanish if no other square was free. It now stays put.
+- A Hint during the swap animation jumped the pieces. Hint now waits.
+- A near-vacuous determinism test was replaced. New tests cover different
+  seeds, a move blocked by the roadblock itself, staying put, boards no seed
+  can solve, and the search budget.
+
+After the fixes: 19 of 19 rules tests, course check, tooling tests, and 24 of
+24 browser checks pass. Code review does not replace human play evidence.
 
 TODO: Record your own resolution of the review, including whether you keep the
-three implementation choices listed under Implementation. The student and
-instructor retain approval decisions.
+implementation choices listed above. The student and instructor retain
+approval decisions.

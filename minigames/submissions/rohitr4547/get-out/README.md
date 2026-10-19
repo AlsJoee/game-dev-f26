@@ -22,41 +22,53 @@ to the exit's previous square.
 The swap rule comes from rajvardhan19's variation (class PR #12), co-developed
 with rohitr4547, and is unchanged here.
 
-## Roadblock addition
+## Moving roadblock addition
 
-This copy adds a **no-entry roadblock** (`X`, drawn as a red no-entry traffic
-sign). It is in place from the first move, and it stops a slide exactly like a
-wall. The exit can never land on it, because the exit only goes where the ball
-stops.
+This copy adds a **no-entry roadblock**, drawn as a red no-entry traffic sign.
+It is on the board from the first move, and it stops a slide exactly like a
+wall. **After every move that misses the exit, it jumps to a new square**, so
+the route you just planned is closed again. The swap rule above is unchanged.
 
-Where it goes: when a puzzle loads, `placeRoadblock` finds the current shortest
-route under the swap rule, collects the floor squares the ball slides across
-on that route, and picks one at random. It prefers a square that stops the old
-shortest route from working, and it only keeps a square if the board stays
-solvable. If no route square works, it falls back to another floor square. If
-none works either, the board is left without a roadblock.
+Where it goes: from the new ball and exit positions, the game finds the
+shortest way out as if there were no roadblock. It collects the floor squares
+the ball would slide across on that route and orders them with a seeded
+shuffle. It picks the first square that breaks that route, then any route
+square, then any other floor square. It never picks the ball's square, the
+exit's square, the start square, or a wall. It never stays on the square it
+just left, unless no other free square exists; then it stays rather than
+vanishing. A blocked move does not move it, and a winning move ends the game.
 
-- **Reset** keeps the same roadblock, so retries are comparable.
-- **New roadblock** rolls a fresh one for the same board, on a different
-  square whenever another square works.
-- In the editor, the **Roadblock** tool paints one `X`. A board code that
-  contains an `X` keeps it as written (and hides **New roadblock**). A code
-  without one gets a random roadblock when it is played.
-- The status line and trace say when the roadblock, rather than a wall or the
-  edge, stopped a slide or blocked a move.
+Why it is seeded: the choice depends only on the puzzle's seed, the ball, the
+exit, and the square it just left. To the player it looks random, but the game
+is still a fixed puzzle, so the solver can plan around it. The game only uses
+seeds whose sequence still leaves a way out (`solvableSeed`).
+
+- Each teaching board has a fixed seed, so every player sees the same
+  sequence. Reset replays that sequence; Undo restores the previous square.
+- **New roadblock** switches to a random seed that leaves a way out and starts
+  the roadblock on a different square.
+- Custom and imported boards get a random seed. Board codes describe only
+  walls, start, and exit; the game always places the roadblock. If no seed
+  leaves a way out, the board plays without a roadblock and says so.
+- The status line says where the roadblock jumped and whether it stopped your
+  slide. The trace records its square after each move.
 
 ## Play
 
-Open `minigames/submissions/rohitr4547/get-out/index.html` directly in a browser. No installation,
-build, account, API key, or runtime network connection is needed.
-
-Alternatively, from the repository root:
+Start a local server and open the game in your browser, from the repository
+root:
 
 ```sh
-python3 -m http.server 8000
+python3 minigames/submissions/rohitr4547/get-out/serve.py
 ```
 
-Open <http://localhost:8000/minigames/submissions/rohitr4547/get-out/>. For classroom phone access,
+It serves only this folder on <http://127.0.0.1:8000/> (or the next free port),
+opens your browser, and stops with Ctrl+C. Use `--port 9000` to pick a port or
+`--no-open` to skip opening the browser. It needs only Python 3.
+
+You can also open `minigames/submissions/rohitr4547/get-out/index.html`
+directly in a browser. No installation, build, account, API key, or runtime
+network connection is needed. For classroom phone access,
 serve these static files through the course's approved hosting route.
 A localhost URL belongs to the device running the server. Campus Wi-Fi may
 prevent phones from reaching a laptop server. Hosting is not configured here.
@@ -65,7 +77,7 @@ prevent phones from reaching a laptop server. Hosting is not configured here.
 - Slide in one direction until a wall or the outside border stops you.
 - Reach the exit to win, including when you encounter it during a slide.
 - Missing the exit swaps the ball and the exit (see above).
-- The no-entry roadblock stops you like a wall (see above).
+- The no-entry roadblock stops you like a wall and jumps after every move (see above).
 - Blocked directions leave the board and move count unchanged.
 - Undo reverses a successful move; reset starts a fresh attempt and trace.
 - Optional hints reveal the next move on a shortest route from your position.
@@ -95,9 +107,9 @@ chapter 13 covers balance. Guide text is original classroom interpretation.
 
 ## Design and exchange
 
-Choose **Design a puzzle**, select a wall, clear, start, exit, or roadblock
-tool, and click/tap cells. The editor opens on the board without its random
-roadblock. A fresh board is 7 × 7. The editor preserves your current game
+Choose **Design a puzzle**, select a wall, clear, start, or exit tool, and
+click/tap cells. The game adds the moving roadblock when you play. A fresh
+board is 7 × 7. The editor preserves your current game
 until you choose **Check & play**; Cancel returns to it.
 
 Check & play verifies a single start and exit and at least one solution.
@@ -114,9 +126,8 @@ S..#...
 #....#.
 ```
 
-`S` is the start, `E` the exit, `#` a wall, `X` a roadblock, and `.` an
-empty square. A code with an `X` keeps that roadblock; a code without one
-gets a random roadblock when it is played. Boards
+`S` is the start, `E` the exit, `#` a wall, and `.` an empty square. The
+roadblock is not part of the code; it gets a random seed when played. Boards
 must be rectangular, between 2 and 20 rows and columns, with exactly one
 start and exit. Invalid or unsolvable imports preserve the current game.
 Boards and progress are kept in memory only. Copy the board code before
@@ -156,26 +167,28 @@ state = game.step(state, 'right');
 - `step(state, direction)` returns the resulting state without mutating the
   input. It rejects unknown directions. Terminal states cannot move.
 - `solve(state)` returns a shortest direction sequence, `[]` for a won
-  state, or `null` if the exit is unreachable. It searches ball and exit positions.
-- `placeRoadblock(board, random = Math.random, avoid = null)` returns a copy
-  of the board with one `X`: on a shortest-route square that breaks that
-  route if possible, else on any route square, else on another floor square.
-  It returns the board unchanged if it already has an `X`, is unsolvable, or
-  no placement keeps it solvable. `avoid` (a `[row, column]`) is tried last,
-  so a reroll moves the roadblock when another square works. Pass a seeded
-  `random` for repeatable placement.
+  state, or `null` if the exit is unreachable. It searches ball, exit, and
+  roadblock positions together, so hints account for the jumps.
+- `create(board, seed)` adds the moving roadblock when `seed` is a whole
+  number; with no seed (`null`) the game is the plain swap version.
+- `solveWithin(state, limit)` is `solve` with a cap on positions examined; it
+  returns `{path, complete}`, where `complete` is false if it stopped early.
+  Hints use it so a large board cannot freeze the page.
+- `solvableSeed(board, first, tries = 12)` returns the first seed from
+  `first` whose roadblock sequence leaves a way out, or `null`.
+- `observe` also reports `roadblock` (its square or `null`), and the board
+  shows it as `X`.
 
 `solve` is the instructor reference and hint provider. A future model player
 should receive only observations and submit actions through a bounded runner;
 keep solver answers and development tools outside that player's access.
 There is no model player or live model connection in this minigame yet.
 
-Trace downloads (`get-out-roadblock-trace-v1`) contain the starting board
-(with its `X`), the `roadblocks` positions,
-attempted directions, outcomes, undo and hint events, and final ball and exit
-positions. `roadblockSource` is `random` or `authored`. Each move event has
-`exit`, `swapped`, and `roadblock` (true when the roadblock stopped the slide
-or blocked the move). New roadblock starts a new trace, like Reset. After a swap, `to` is
+Trace downloads (`get-out-moving-roadblock-trace-v1`) contain the starting
+board, the `seed`, attempted directions, outcomes, undo and hint events, and
+final ball, exit, and `roadblock` positions. Each move event has `exit`,
+`block` (the roadblock's square after the move), `swapped`, and `roadblock`
+(true when the roadblock stopped the slide or blocked the move). After a swap, `to` is
 where the ball landed (the old exit) and `exit` is where the slide stopped.
 Coordinates in JSON are zero-based;
 the visible trace uses one-based coordinates. Reset begins a new trace.
@@ -194,14 +207,15 @@ exit square, exit crossing, terminal behavior, swap-aware shortest paths,
 unreachable exits, malformed boards, detached observations that follow the
 exit, and the teaching boards' solvability. Roadblock tests cover a slide
 stopped by the roadblock (and the swap that follows), a move into it being
-blocked, the solver routing around it, an exit walled in by roadblocks,
-seeded placement that breaks the old route and stays solvable, authored and
-unsolvable boards being left alone, the fallback square, and every teaching
-board over 40 random placements.
+blocked without moving it, the roadblock moving to a new free square after
+every move on all teaching boards, the first roadblock breaking the shortest
+route, different seeds giving different squares, staying put when no other
+square is free, boards no seed can solve, the search budget, the solver
+planning around the jumps, observations, and rejection of `X` in board codes.
 
-Browser smoke check: confirm one roadblock appears, finish the first board by
-following hints (its route depends on where the roadblock lands), undo, reset
-(same roadblock), New roadblock,
+Browser smoke check (run with `serve.py`): confirm the roadblock appears,
+make a move and see it jump, finish the first board by following hints, undo
+(roadblock returns), reset (same sequence), New roadblock,
 request a hint, edit a wall, play the custom board, export and reload its
 code, reject an unsolvable code, and download a trace. Repeat movement with
 phone controls and confirm the page fits the screen.
