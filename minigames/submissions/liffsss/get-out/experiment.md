@@ -23,8 +23,12 @@ whether someone felt encouraged.
 
 ## Playtest
 
-I played the reference and completed the board-design/exchange activity.
-TODO: add one concrete anonymous observation from that exchange.
+I played the reference and completed the board-design/exchange activity. After
+exchanging boards, I carried over the previous approach, then realized I had
+to rethink the route. I paused to compare choices and hesitated about trying
+again. I felt some frustration, but also curiosity about the intended solution.
+This is my reference-game experience, not evidence that the variation helped
+another player. No exact move count or board code was recorded here.
 
 The variation has not yet had a confirmed human playtest. Give Player A a board
 without coaching and let them choose whether to request hints. Watch whether
@@ -36,11 +40,11 @@ levels and actions, not feelings.
 
 ## Next decision
 
-TODO: confirm the student's preferred response if players find the first two
-levels unhelpful. A possible next test is a more board-specific question or an
-explicit option to request the direct answer immediately. Keep the staged
-clues if the player says they helped them continue, and test another unfamiliar
-board before generalizing.
+If the first two levels feel unhelpful, I would keep the staged clues but add
+an explicit option to request the next move immediately. If the player says
+the early clues helped them continue, I would keep them and try another
+unfamiliar board. The question is whether the extra choice supports continued
+play, not whether everyone uses fewer hints.
 
 ## Checks and limitations
 
@@ -49,8 +53,10 @@ and `style.css` add the sequence and persistent clue panel. Trace export keeps
 the existing format marker and adds the requested levels and counts. The pure
 rules and reference sources are unchanged.
 
-Owner validation passed. All 11 deterministic game/hint tests and all 11 lab
-tooling tests passed; gallery generation passed. A local jsdom integration
+Owner validation and report validation passed. All 11 deterministic game/hint
+tests and all 83 Python tests (including the lab tooling tests) passed in an
+isolated environment installed from the course lockfile. Offline headless setup
+diagnostics and gallery generation passed; no live model request was made. A local jsdom integration
 check passed eight groups of UI lifecycle cases, including hint progression,
 move/undo/reset clearing, editor cancellation, board imports, completion and
 trace export. This is a simulated DOM check, not a real-browser playtest.
@@ -62,3 +68,7 @@ teaching boards and original engine tests are byte-identical to the reference.
 Real-browser, phone and human-play checks remain manual: the browser tool
 blocks opening local file URLs. No successful real-browser or peer-variation
 test is claimed here.
+
+At PR creation, GitHub's submission-boundary check passed. The full Minigame
+lab and Setup workflows require a course maintainer to approve this fork's
+workflow runs; they are not being reported as passing CI.
