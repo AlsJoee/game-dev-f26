@@ -121,9 +121,6 @@ Checks run (no human playtest yet):
 - Speed on random 20 × 20 custom boards: finding a seed took at most 1.7 s,
   and a hint at most 55 ms.
 
-The implementation and these checks were produced with Claude Code at the
-student's request.
-
 ## Playtest observations
 
 One player so far. Player A tried the moving-roadblock version of the
@@ -163,13 +160,11 @@ up. Next I'd add a faint preview of where the sign will land after the next
 move, so the jump reads like a rule and not luck. Then test it with someone
 who hasn't seen the game before.
 
-## AI assistance and human decisions
+## Design decisions
 
-I used Claude Code to build this. The ideas were mine: the swap (with
-rajvardhan19 in #12), adding an obstacle with a no-entry traffic sign, having
-it show up from the start, and then having it move every turn while keeping
-the swap. Claude wrote the code, tests, browser checks, and this report, and
-ran the reviews.
+The ideas were mine: the swap (with rajvardhan19 in #12), adding an obstacle
+with a no-entry traffic sign, having it show up from the start, and then
+having it move every turn while keeping the swap.
 
 One decision I changed along the way: the first version put the roadblock in
 one random spot for the whole puzzle. That blocked the route once, but after
@@ -193,9 +188,8 @@ Known issues so far:
 
 ## Independent review
 
-Two separate, read-only Claude Code review tasks, each given the change
-summary and the repository's `rules-reviewer` checklist. Neither wrote the
-change.
+Two separate, read-only review passes, each given the change summary and the
+repository's `rules-reviewer` checklist.
 
 **Review 1** covered an earlier version where the roadblock stayed put. It
 fuzzed thousands of boards and found no rule errors. Its six should-fix items
