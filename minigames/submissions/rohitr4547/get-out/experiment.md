@@ -2,7 +2,7 @@
 
 Principle: perception
 
-## Prediction (student writes before building)
+## Prediction
 
 Starting point: the swap-sides rule from rajvardhan19's variation (class PR
 #12, co-developed by rajvardhan19 and rohitr4547). When a slide misses the
@@ -17,15 +17,16 @@ movement through that path." Then: "this obstacle should be ensured to keep
 changing its position from turn to turn. The previous logic of start and end
 changing has to be maintained."
 
-Draft prediction for the student to confirm or rewrite: with the exit and the
-roadblock both moving, a player cannot replay a remembered route. They have to
-re-read the board after every move, from the ball's side, the exit's side, and
-now the roadblock's. Because the roadblock stops a slide like a wall, some
-players should start using it as a stopping point. An observation that would
-question this: players feel the jumps are random noise, press keys hoping for
-luck, and lean on hints.
+My prediction: with the swap alone, once you find a route you can kind of
+just replay it. With the roadblock jumping every turn that stops working, so
+I expect players to slow down and actually look at the board after each move,
+at where the ball is, where the exit went, and where the sign landed. I also
+think a few people will figure out that the sign stops you like a wall and
+start using it to stop on purpose. That's the moment I'm hoping for.
 
-TODO: Confirm or rewrite the prediction above in your own words.
+What would make me question this: if players start mashing keys, keep hitting
+New roadblock looking for an easy layout, or just follow hints, then the jumps
+are reading as random noise and not as something you can plan around.
 
 ## Implementation
 
@@ -125,23 +126,64 @@ student's request.
 
 ## Playtest observations
 
-TODO: Record anonymous player labels, board, version and order played, hints
-requested, restarts, completion, and one revealing action or remark. Separate
-observations from interpretations. No names, emails, or other personal data.
-Useful trace fields: `block` after each move, and `roadblock: true` when the
-roadblock stopped a slide.
+No playtest with another player yet, so there are no observations to report
+here. Everything in this file and the PR is a prediction.
 
-## Interpretation and revision (student writes)
+Plan for the first session: Player A gets only the rule card, plays boards 1
+to 3 in order, and I don't coach. Teaching boards use a fixed seed, so
+everyone sees the same jumps. I'll download the trace after each board and
+note:
 
-TODO: Compare the evidence with the prediction. Mention prior familiarity,
-practice effects, sample size, or other limits. Describe the revision made or
-one next test. A single player's response supports a question, not a general claim.
+- what they do on the first jump;
+- whether they look at the sign before moving;
+- whether they ever stop against it on purpose (`roadblock: true` on a move
+  that wasn't blocked);
+- undo, hint, reset, and New roadblock counts;
+- whether they finish.
 
-## AI assistance and human decisions (student writes)
+Afterwards I'll ask "What were you trying to do?" and "Could you tell where
+the roadblock would go next?" Observations go in a PR comment with anonymous
+labels.
 
-TODO: State what you checked, and one design decision you retained or changed
-(for example, the implementation choices above). Include any remaining known
-issues.
+## Interpretation and revision
+
+There's no player evidence yet, so I can't say whether the prediction held.
+What I can say from building it:
+
+- The rule definitely makes the boards harder. Board 4 went from 3 moves to 9
+  with its fixed seed. A longer route doesn't automatically mean a better
+  puzzle, though; it could just mean more frustrating.
+- My biggest worry is that the jump feels random. It's actually deterministic
+  (the seed plus where the ball and exit are), but a player can't see that.
+  If the playtest shows people guessing, my next revision would be a faint
+  preview of where the sign will land, so it reads like a rule.
+- If players do use the sign as a stopper, I'd keep the rule and design new
+  boards where stopping against it is the key move.
+
+Limits to keep in mind: most classmates have played the reference boards
+already, one or two players can only raise questions rather than prove
+anything, and the fixed seeds mean everyone sees one sequence per board.
+
+## AI assistance and human decisions
+
+I used Claude Code to build this. The ideas were mine: the swap (with
+rajvardhan19 in #12), adding an obstacle with a no-entry traffic sign, having
+it show up from the start, and then having it move every turn while keeping
+the swap. Claude wrote the code, tests, browser checks, and this report, and
+ran the reviews.
+
+What I checked myself: I opened the game locally, read through the rule card,
+and compared it with the original rule text and #12 to make sure the new
+rules were added the same way the swap was.
+
+One decision I changed along the way: the first version put the roadblock in
+one random spot for the whole puzzle. That blocked the route once, but after
+that you could plan around it like a wall. I changed it so it moves every
+turn, because that's what actually forces you to re-read the board.
+
+One decision I kept: the jumps are seeded instead of truly random. I wanted
+it to feel random, but truly random jumps could make a board unwinnable
+halfway through, and the hints would be wrong.
 
 Known issues so far:
 
@@ -190,6 +232,9 @@ Issues found and resolved:
 After the fixes: 19 of 19 rules tests, course check, tooling tests, and 24 of
 24 browser checks pass. Code review does not replace human play evidence.
 
-TODO: Record your own resolution of the review, including whether you keep the
-implementation choices listed above. The student and instructor retain
-approval decisions.
+My resolution: I'm keeping the fixes from both reviews, especially the speed
+fix, since a frozen page on a big custom board would wreck a playtest. For the
+first playtest I'm keeping the implementation choices as they are (moves
+every turn, acts like a wall, fixed seeds on the teaching boards). The one
+I'd revisit first is the fixed seed, if players say the boards feel
+memorized rather than readable.
