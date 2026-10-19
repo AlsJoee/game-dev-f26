@@ -15,7 +15,7 @@ The reference movement rules, solver, move counter, and teaching boards are
 unchanged. No route-history markers are used in this variation.
 
 See [Design and playtesting](experiment.md#design-and-playtesting) for the
-student's prediction and planned test. No human results are claimed yet.
+student's prediction, reported playtest results, and next test.
 
 ## Play
 

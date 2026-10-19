@@ -9,8 +9,8 @@ The student's goal, in their own words:
 
 > Help them figure out the route themselves and feel that they solved it.
 
-The expected behavior below is a prediction. There are no reported human
-playtest results for this variation.
+This goal was recorded before building. The observations below were reported
+after playing the variation.
 
 ## Design and playtesting
 
@@ -21,26 +21,27 @@ Schell writes that "a well-timed hint can renew their hope and their curiosity."
 Lens 58 asks, "Which of the ten puzzle principles apply to each of my puzzles?"
 (p. 265). Here I am applying the hints principle to the route-finding puzzle.
 
-**Possible outcomes:** I expect a player to use a question or clue and then work
-out a move themselves. If they can explain the move and say they felt they
-solved it, that would support my goal. They might instead click through to the
-move every time. That could mean the earlier hints are too vague or that the
-player wants a direct answer. Completing the board alone would not show
-understanding or ownership.
+**Possible outcomes:** I expect a player to use a question or clue and then
+figure out the move. That would support my goal. Some players might just want
+the move fed to them. They can click through the earlier hints to get it.
+If that happens, the sequence is not preserving the discovery I want.
+I think having access to every hint can make the game less fun or competitive.
+This is a possible outcome, not something I observed Player A doing.
 
-**Playtest:** Ask Player A to solve an unfamiliar board. Say the hints are
-optional. Watch without coaching. Record which levels they request, what they
-do next, and whether they continue without more help. Ask, "How did you decide
-your next move?" and "What felt like your own discovery?" Record their actual
-words separately from my prediction. A comparison with direct hints should use
-comparable unfamiliar boards and alternate version order across players;
-repeating a known solution introduces practice effects.
+**Playtest:** When I needed a hint, it was helpful. Player A played the game.
+They found it fun and thought the hints were good. They solved it on their own
+without using the hints. So this test did not show whether the gradual hints
+helped Player A figure out the route. For the next test, I would ask a player
+to try an unfamiliar board and use help when they need it. I would watch
+whether they work out a move after a question or clue, or click through to
+the move.
 
-**Next decision:** If a question or clue helps the player reason through a move,
-I would keep the sequence and test another board. If they skip to the answer,
-I would ask why and revise the earlier hints if they were unclear. If hints
-spoil the discovery, I would make the clue less specific. Checks and known
-limits are listed below. Human interpretation remains pending.
+**Next decision:** If the early hints help players work out a move, I would
+keep the sequence. If players skip straight to the move, I would test being
+more stingy with hints. I could limit the number of hints or make hints use up
+points. I want to see whether that keeps the game fun and competitive.
+Those are ideas for a future test. They are not implemented or tested here.
+The checks and known limits are listed below.
 
 ## Implementation
 
@@ -57,22 +58,24 @@ limits are listed below. Human interpretation remains pending.
 - The trace records the level, kind, message, and position. The hint count
   counts revealed levels, not how many positions needed help.
 - Reference rules, solver, move scoring, and teaching boards are unchanged.
-  The earlier route-history experiment is preserved in Git history; its
-  markers are absent from this variation.
+  No route-history markers are used in this variation.
 
 ## Actual playtest observations
 
-TODO: No human playtest of progressive hints has been reported. The student
-missed the classmate-board exchange. That exchange remains incomplete.
-A family member is available to test the variation as Player A. This does not
-claim that a family test fulfills the classmate-exchange requirement.
+- I found a hint helpful when I needed one.
+- Player A played and solved the game without using the hints.
+- Player A said the game was fun and thought the hints were good.
+- I also completed the board exchange with a classmate.
+
+These are the student's reported observations. Player A's comments are
+paraphrased. No hint-use sequence is claimed for Player A.
 
 ## Interpretation and revision
 
-TODO: Add the student's observations and interpretation after play. Ask
-whether the hints supported their intended feeling of solving it themselves.
-Keep the player's words distinct from inferred understanding. A small test is
-exploratory, and no positive result is required.
+The hints helped me when I needed them. Player A did not need them.
+That leaves the effect of the gradual sequence on another player untested.
+My next question is how to restrict hints without losing the fun.
+I would test a hint limit or a points cost. Neither has been added to the game.
 
 ## Checks and known limits
 
@@ -104,9 +107,12 @@ exploratory, and no positive result is required.
 ## Decision provenance
 
 The student chose progressive hints and supplied the design goal before this
-change was built. Codex implemented the sequence and organized a proposed
-test plan and conditional interpretations for student review. No human
-observations or feelings are invented. The PR remains in draft.
+change was built. After playing, the student supplied their experience,
+Player A's result, the concern about skipping hints, and the ideas for hint
+limits or point costs. This report separates those observations from the
+possible outcomes and proposed next test.
+Codex implemented the hint sequence and helped organize this report from
+the student's directions and dictation.
 
 ## Sources
 
