@@ -34,25 +34,26 @@ the signal helps them judge moves or confuses them.
 solve each puzzle in as few moves as possible but had no way to know whether
 they had found an optimal solution.
 
-**Variation playtest observation:** TODO — test the variation with an anonymous
-player. Record whether they notice each count, how the fewest-left count changes
-after moves, completion count, undo/reset behavior, hints, and a revealing
-action or remark. Do not treat predicted behavior as an observed result.
+**Variation playtest observation (student report):** Player A solved a puzzle,
+then tried again until they found a route matching the fewest-moves count. The
+board, exact counts, and whether they used undo or reset were not reported.
+This is an observed result for this playtest, not a prediction.
 
 **Plan:** Ask a player to solve a board while thinking aloud if comfortable.
-Watch whether they notice the move counts, whether they undo or reset after a
-non-optimal completion, whether they use the fewest-left signal to compare
-candidate moves, and whether they can explain what the counts mean. Ask what
-they were trying to do and what changed their understanding.
+For a follow-up, watch whether a player notices the move counts, whether they
+undo or reset after a non-optimal completion, whether they use the fewest-left
+signal to compare candidate moves, and whether they can explain what the counts
+mean. Ask what they were trying to do and what changed their understanding.
 
 ## Next decision
 
-TODO — decide whether to keep or revise the comparison after observing a
-player. If players replay and improve, test whether the board target helped
-them choose another route. If players use the fewest-left signal to assess
-moves, keep it and test with another board. If they ignore it, find it
-distracting, or read it as a monotonic progress bar, revise its label or
-explanation and test again. A small number of playtests is exploratory.
+The reported playtest matches my prediction: Player A replayed after solving
+until they found a route at the fewest-moves target. I would keep that target
+for now. In a follow-up, test whether the live fewest-left count helps a player
+compare moves before finishing, or whether it mainly motivates replay after a
+completion. If players ignore it, find it distracting, or read it as a
+monotonic progress bar, revise its label or explanation and test again. A
+small number of playtests is exploratory.
 
 ## Implementation and checks
 
@@ -67,9 +68,10 @@ remain to be done manually.
 
 ## AI assistance and human decisions
 
-Codex implemented the requested displays and comparison. I chose the design
-principles and prediction. TODO — after reviewing and playtesting, record what
-I kept or changed and any remaining issue.
+Codex implemented the requested displays and comparison and ran the automated
+checks. I chose the design principles and prediction, reported the classmate's
+playtest result, and chose to keep the board target for now while testing the
+fewest-left signal further.
 
 ## Independent review
 
