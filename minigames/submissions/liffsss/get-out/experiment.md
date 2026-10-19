@@ -30,21 +30,26 @@ again. I felt some frustration, but also curiosity about the intended solution.
 This is my reference-game experience, not evidence that the variation helped
 another player. No exact move count or board code was recorded here.
 
-The variation has not yet had a confirmed human playtest. Give Player A a board
-without coaching and let them choose whether to request hints. Watch whether
-they attempt another move after each level, ask for more help, reset or stop.
-Record the board and order, then ask: "What made you keep trying or stop?"
-Use a different comparable board for a second attempt; repeating a known
-solution introduces a practice effect. The downloaded trace records hint
-levels and actions, not feelings.
+I then tried the variation with one classmate, Player A. They said the hints
+were useful, and one hint request was often enough for them to finish a puzzle.
+We checked hints, movement, Undo and Reset and found them working normally.
+No exact board list, attempt count, hint-level log or timing was recorded, so
+"often" is a qualitative observation rather than a measured success rate.
+
+This is encouraging for my prediction that a hint can help someone keep going.
+It does not yet show how much the staged format helped compared with the
+reference's direct hint. On another unfamiliar board, I would watch what the
+player does after each level and ask: "What made you keep trying or stop?"
+Repeating a known solution introduces a practice effect. The downloaded trace
+records hint levels and actions, not feelings.
 
 ## Next decision
 
-If the first two levels feel unhelpful, I would keep the staged clues but add
-an explicit option to request the next move immediately. If the player says
-the early clues helped them continue, I would keep them and try another
-unfamiliar board. The question is whether the extra choice supports continued
-play, not whether everyone uses fewer hints.
+For now I would keep the staged clues and test another unfamiliar board, since
+Player A found the hints useful. If another player finds the first two levels
+unhelpful, I would keep them available but add an explicit option to request
+the next move immediately. The question is whether the extra choice supports
+continued play, not whether everyone uses fewer hints.
 
 ## Checks and limitations
 
@@ -65,9 +70,10 @@ A separate code reviewer found no blocking defects, reran the 11 game tests,
 and independently checked the UI lifecycle with a mocked DOM. The rules engine,
 teaching boards and original engine tests are byte-identical to the reference.
 
-Real-browser, phone and human-play checks remain manual: the browser tool
-blocks opening local file URLs. No successful real-browser or peer-variation
-test is claimed here.
+The manual browser and classmate results above were supplied by the student;
+they are separate from the automated checks. Phone/narrow-screen play has not
+been specifically confirmed. The browser tool blocked local file URLs, so the
+agent did not conduct a real-browser check.
 
 At PR creation, GitHub's submission-boundary check passed. The full Minigame
 lab and Setup workflows require a course maintainer to approve this fork's
