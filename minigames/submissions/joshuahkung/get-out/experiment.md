@@ -10,10 +10,12 @@ Lens 58, puzzle principle "Hints extend interest."
   unexplored stopping points, (2) a highlight on the wall or edge that stops the
   next slide on a shortest route, (3) the move itself. Each press goes one level
   deeper; any move, undo, or reset returns to level 1.
-- **Why:** a hint that names the move solves the step for the player. Schell's
-  principle is that a hint should keep a stuck player engaged, so the smallest
-  nudge that restores progress is the better hint. Level 2 points at the idea the
-  game teaches (walls are stopping points) without giving the direction.
+- **Why:** when we exchanged boards in class, my classmate sometimes needed a
+  hint, because not every move is intuitive, and a hint helps the game keep
+  progressing. But the reference hint names the move outright, which solves the
+  step for the player. Schell's principle is that hints extend interest, so I
+  want the smallest nudge that keeps someone moving. Level 2 points at the idea
+  the game teaches (walls are stopping points) without giving the direction.
 - **Rules:** movement, exit, and the solver are unchanged. The new `hint(state, level)`
   in `engine.js` derives every level from the existing shortest-path solver.
 
