@@ -18,7 +18,7 @@ Principle: progress
   repeated routes and necessary revisits, and ask how the player chose a move.
 - **Next decision:** Keep the current trail for the proposed test. If players
   use it to reason about routes, retain it; if it obscures the board or creates
-  confusion, try fading older trail segments and test again. The easy-level
+  confusion, try marking only the endpoints and test again. The easy-level
   self-test does not establish a measurable improvement. Functional checks and
   known limits are recorded below.
 
@@ -76,9 +76,10 @@ how much help is needed on those boards. This is reported perceived usefulness;
 no reduction in repeated moves was measured. Exact boards, move counts, hint
 use, resets, and completion details were not supplied.
 
-TODO: If a peer tests it, record anonymous player labels, board, version and
-order played, hints requested, restarts, completion, and one revealing action
-or remark. Separate observations from interpretations. No personal data.
+Peer testing of the variation has not been completed. If this planned test
+is run, record anonymous player labels, board, version and order played,
+hints requested, restarts, completion, and one revealing action or remark.
+Separate observations from interpretations. No personal data.
 
 Proposed test: ask Player A to solve an unfamiliar board using the variation,
 without coaching. Watch for repeated routes and decisions to revisit a square.
@@ -129,3 +130,7 @@ The reviewer repeated submission validation, all 7 engine tests, and the
 JavaScript syntax check successfully. The reviewer did not repeat the browser
 checks or the 83 repository tests; those results above were recorded during
 implementation. This review supplies no additional human-playtest evidence.
+
+A final independent pass checked the shortened `pr-description.md` against
+the assignment's four required reflection points and found no actionable
+issues. The endpoint-only fallback matches the student's edited PR text.
