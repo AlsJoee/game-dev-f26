@@ -33,6 +33,15 @@ class SolvingClient:
         return ModelReply("wait", input_tokens=100, output_tokens=4, model_version="fake")
 
 
+class ThinkingClient(SolvingClient):
+    """As SolvingClient, plus 10 thinking tokens per call, counted in output as Gemini bills them."""
+
+    def __call__(self, prompt, seed=None):
+        reply = super().__call__(prompt, seed)
+        return ModelReply(reply.text, input_tokens=100, output_tokens=14, model_version="fake",
+                          thinking_tokens=10)
+
+
 class TempDirTest(unittest.TestCase):
     def setUp(self):
         self._tmp = tempfile.TemporaryDirectory()
@@ -114,7 +123,7 @@ class RunAndCsvTest(TempDirTest):
         self.assertEqual(reader.fieldnames, [
             "date", "git_commit", "player", "model", "view", "history", "room", "seed", "outcome",
             "score", "steps", "invalid_actions", "fallbacks", "model_calls", "input_tokens",
-            "output_tokens", "total_latency_s", "est_cost_usd"])
+            "output_tokens", "thinking_tokens", "total_latency_s", "est_cost_usd"])
         self.assertEqual(len(rows), 4)  # one header, four rows from two runs
         self.assertEqual((rows[1]["player"], rows[1]["model"], rows[1]["est_cost_usd"]),
                          ("model", MODEL, "0.000406"))
@@ -140,23 +149,38 @@ class RunAndCsvTest(TempDirTest):
         self.assertNotIn("Next to you:", json.loads(
             (self.tmp / "traces" / names[0]).read_text().splitlines()[0])["prompt"])
 
-    def test_results_file_from_before_view_is_upgraded(self):
-        path = self.tmp / "results.csv"
-        old = ev.COLUMNS_BEFORE_VIEW
-        with path.open("w", newline="") as f:
-            writer = csv.DictWriter(f, fieldnames=old)
-            writer.writeheader()
-            for row in self.evaluate(histories=(0,), trials=1):
-                writer.writerow({k: row[k] for k in old})
-        ev.append_csv(path, ev.run_evaluation(
-            ["A"], 1, [0], SolvingClient(), model=MODEL, commit="abc123", prices=PRICES,
-            today="2026-11-02", traces_dir=self.tmp / "traces", view="local"))
-        with path.open(newline="") as f:
-            reader = csv.DictReader(f)
-            rows = list(reader)
-        self.assertEqual(reader.fieldnames, ev.COLUMNS)
-        self.assertEqual([(r["player"], r["view"]) for r in rows],
-                         [("bfs", ""), ("model", "map"), ("bfs", ""), ("model", "local")])
+    def test_earlier_results_files_are_upgraded(self):
+        before_view = [c for c in ev.COLUMNS if c not in ("view", "thinking_tokens")]
+        before_thinking = [c for c in ev.COLUMNS if c != "thinking_tokens"]
+        for old in (before_view, before_thinking):
+            with self.subTest(columns=len(old)):
+                path = self.tmp / f"results-{len(old)}.csv"
+                with path.open("w", newline="") as f:
+                    writer = csv.DictWriter(f, fieldnames=old)
+                    writer.writeheader()
+                    for row in self.evaluate(histories=(0,), trials=1):
+                        writer.writerow({k: row[k] for k in old})
+                for trace in (self.tmp / "traces").iterdir():
+                    trace.unlink()
+                ev.append_csv(path, ev.run_evaluation(
+                    ["A"], 1, [0], ThinkingClient(), model=MODEL, commit="abc123", prices=PRICES,
+                    today="2026-11-02", traces_dir=self.tmp / "traces", view="local"))
+                with path.open(newline="") as f:
+                    reader = csv.DictReader(f)
+                    rows = list(reader)
+                self.assertEqual(reader.fieldnames, ev.COLUMNS)
+                self.assertEqual([(r["player"], r["view"], r["thinking_tokens"]) for r in rows],
+                                 [("bfs", "", "0"), ("model", "map", "0"),
+                                  ("bfs", "", "0"), ("model", "local", "70")])
+
+    def test_thinking_tokens_in_row_and_cost(self):
+        rows = self.evaluate(client=ThinkingClient(), histories=(0,), trials=1)
+        model = rows[1]
+        # 7 calls: 100 input, 4 reply + 10 thinking output each.
+        self.assertEqual((model["input_tokens"], model["output_tokens"], model["thinking_tokens"]),
+                         (700, 98, 70))
+        self.assertEqual(model["est_cost_usd"], ev.est_cost(700, 98, (0.5, 2.0)))
+        self.assertEqual(rows[0]["thinking_tokens"], 0)
 
     def test_csv_with_other_columns_is_not_appended(self):
         path = self.tmp / "results.csv"

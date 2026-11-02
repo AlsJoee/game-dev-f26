@@ -38,8 +38,9 @@ ACTION_WORDS = re.compile(r"\b(jump[ _-]?left|jump[ _-]?right|left|right|climb|w
 class ModelReply:
     text: str
     input_tokens: int | None = None
-    output_tokens: int | None = None
+    output_tokens: int | None = None   # includes thinking_tokens, which are billed as output
     model_version: str | None = None
+    thinking_tokens: int | None = None
 
 
 class ModelConfigError(ValueError):
@@ -86,17 +87,25 @@ class VertexClient:
                     automatic_function_calling=types.AutomaticFunctionCallingConfig(disable=True),
                 ),
             )
-        usage = response.usage_metadata
-        # Thinking tokens are billed as output, so they are counted as output here.
-        output = None
-        if usage is not None and usage.candidates_token_count is not None:
-            output = usage.candidates_token_count + (usage.thoughts_token_count or 0)
-        return ModelReply(
-            text=response.text or "",
-            input_tokens=getattr(usage, "prompt_token_count", None),
-            output_tokens=output,
-            model_version=response.model_version or self.model,
-        )
+        return reply_from_response(response, self.model)
+
+
+def reply_from_response(response, model):
+    """A ModelReply from a Gemini response. Thinking tokens are billed as output,
+    so they are added to output_tokens and also kept as thinking_tokens."""
+    usage = response.usage_metadata
+    thinking = (getattr(usage, "thoughts_token_count", None) or 0) if usage is not None else None
+    candidates = getattr(usage, "candidates_token_count", None)
+    output = None
+    if candidates is not None or thinking:
+        output = (candidates or 0) + thinking
+    return ModelReply(
+        text=response.text or "",
+        input_tokens=getattr(usage, "prompt_token_count", None),
+        output_tokens=output,
+        model_version=response.model_version or model,
+        thinking_tokens=thinking,
+    )
 
 
 def parse_action(reply, legal_actions):
@@ -229,7 +238,7 @@ class ModelPlayer:
         if reply is None:
             return {"prompt": prompt, "action": "wait", "raw_reply": None, "parsed_action": None, "fallback": True,
                     "error": error, "latency_s": latency, "input_tokens": None,
-                    "output_tokens": None, "model_version": None}
+                    "output_tokens": None, "thinking_tokens": None, "model_version": None}
         parsed = parse_action(reply.text, legal_actions)
         return {
             "prompt": prompt,
@@ -237,7 +246,8 @@ class ModelPlayer:
             "action": parsed if parsed is not None else reply.text,
             "raw_reply": reply.text, "parsed_action": parsed, "fallback": False, "error": None,
             "latency_s": latency, "input_tokens": reply.input_tokens,
-            "output_tokens": reply.output_tokens, "model_version": reply.model_version,
+            "output_tokens": reply.output_tokens, "thinking_tokens": reply.thinking_tokens,
+            "model_version": reply.model_version,
         }
 
     def remember(self, action, result_text):
@@ -273,7 +283,7 @@ def run_episode(episode, player, room, seed, on_step=None):
 
 def summarize(records, outcome, player, *, model, room, seed, git_commit):
     def total(key):
-        return sum(r[key] or 0 for r in records)
+        return sum(r.get(key) or 0 for r in records)
 
     fallbacks = sum(r["fallback"] for r in records)
     versions = sorted({r["model_version"] for r in records if r["model_version"]})
@@ -285,6 +295,7 @@ def summarize(records, outcome, player, *, model, room, seed, git_commit):
         "model_calls": player.model_calls,
         "model_moves": len(records) - fallbacks,
         "input_tokens": total("input_tokens"), "output_tokens": total("output_tokens"),
+        "thinking_tokens": total("thinking_tokens"),
         "total_tokens": total("input_tokens") + total("output_tokens"),
         "total_latency_s": round(sum(r["latency_s"] for r in records), 3),
         "model": model, "model_versions": versions,

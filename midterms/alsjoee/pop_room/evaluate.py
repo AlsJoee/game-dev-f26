@@ -29,9 +29,11 @@ UNKNOWN = "unknown"
 
 COLUMNS = ["date", "git_commit", "player", "model", "view", "history", "room", "seed", "outcome",
            "score", "steps", "invalid_actions", "fallbacks", "model_calls", "input_tokens",
-           "output_tokens", "total_latency_s", "est_cost_usd"]
-# The columns before "view" existed; every model row then used the map view.
-COLUMNS_BEFORE_VIEW = [c for c in COLUMNS if c != "view"]
+           "output_tokens", "thinking_tokens", "total_latency_s", "est_cost_usd"]
+# Columns added after results were first recorded, with the value earlier rows get.
+# Every earlier model row used the map view, and those models reported no thinking.
+ADDED_COLUMNS = {"view": lambda row: "map" if row["player"] == "model" else "",
+                 "thinking_tokens": lambda row: "0"}
 
 
 class DirtyTreeError(RuntimeError):
@@ -132,7 +134,7 @@ def bfs_row(room, seed, *, today, commit):
             "room": room, "seed": seed, "outcome": outcome["reason"], "score": outcome["score"],
             "steps": outcome["steps"], "invalid_actions": outcome["invalid_actions"],
             "fallbacks": sum(t["fallback"] for t in player.trace), "model_calls": 0,
-            "input_tokens": 0, "output_tokens": 0, "total_latency_s": 0.0, "est_cost_usd": 0.0}
+            "input_tokens": 0, "output_tokens": 0, "thinking_tokens": 0, "total_latency_s": 0.0, "est_cost_usd": 0.0}
 
 
 def model_row(summary, *, today, price):
@@ -142,6 +144,7 @@ def model_row(summary, *, today, price):
             "steps": summary["steps"], "invalid_actions": summary["invalid_actions"],
             "fallbacks": summary["fallbacks"], "model_calls": summary["model_calls"],
             "input_tokens": summary["input_tokens"], "output_tokens": summary["output_tokens"],
+            "thinking_tokens": summary["thinking_tokens"],
             "total_latency_s": summary["total_latency_s"],
             "est_cost_usd": est_cost(summary["input_tokens"], summary["output_tokens"], price)}
 
@@ -193,8 +196,8 @@ def append_csv(path, rows):
     if path.exists() and path.stat().st_size:
         with path.open(newline="") as f:
             header = next(csv.reader(f), None)
-        if header == COLUMNS_BEFORE_VIEW:
-            _add_view_column(path)
+        if header != COLUMNS and _is_earlier_header(header):
+            _add_columns(path)
         elif header != COLUMNS:
             raise ValueError(f"{path} has different columns; move it before appending.")
         new = False
@@ -207,12 +210,19 @@ def append_csv(path, rows):
         writer.writerows(rows)
 
 
-def _add_view_column(path):
-    """Upgrade a results file written before --view existed: its model rows used the map view."""
+def _is_earlier_header(header):
+    """True if header is COLUMNS with some ADDED_COLUMNS left out."""
+    return header == [c for c in COLUMNS if c in header] and set(COLUMNS) - set(header) <= set(ADDED_COLUMNS)
+
+
+def _add_columns(path):
+    """Upgrade a results file written before some ADDED_COLUMNS existed."""
     with path.open(newline="") as f:
         rows = list(csv.DictReader(f))
     for row in rows:
-        row["view"] = "map" if row["player"] == "model" else ""
+        for column, value in ADDED_COLUMNS.items():
+            if column not in row:
+                row[column] = value(row)
     with path.open("w", newline="") as f:
         writer = csv.DictWriter(f, fieldnames=COLUMNS)
         writer.writeheader()

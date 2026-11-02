@@ -2,11 +2,13 @@
 
 import json
 import time
+from types import SimpleNamespace
 import unittest
 
 from pop_room.episode import PopRoomEpisode
 from pop_room.model_player import (LIMIT_REASON, ModelPlayer, ModelReply, build_prompt,
-                                   local_view, parse_action, run_episode, summarize)
+                                   local_view, parse_action, reply_from_response, run_episode,
+                                   summarize)
 from pop_room.rules_text import intro
 
 _, LEGEND_LINES, RULE_LINES = intro(40).split("\n\n")  # goal, "Map legend:" block, "Rules:" block
@@ -145,6 +147,52 @@ class PromptTest(unittest.TestCase):
         self.assertEqual(moves, ["- wait: wait", "- jump_right: jump_right"])
         self.assertIn("Your last 1 moves", client.prompts[1])
 
+
+
+def gemini_response(text="right", prompt=120, candidates=1, thoughts=None, usage=True):
+    """Shaped like a google-genai GenerateContentResponse, as far as reply_from_response reads it."""
+    metadata = SimpleNamespace(prompt_token_count=prompt, candidates_token_count=candidates,
+                               thoughts_token_count=thoughts) if usage else None
+    return SimpleNamespace(text=text, usage_metadata=metadata, model_version="gemini-3.8-flash-001")
+
+
+class ThinkingTokensTest(unittest.TestCase):
+    def test_thinking_tokens_count_as_output_and_are_kept_separately(self):
+        reply = reply_from_response(gemini_response(candidates=1, thoughts=250), "gemini-3.8-flash")
+        self.assertEqual((reply.text, reply.input_tokens, reply.output_tokens, reply.thinking_tokens),
+                         ("right", 120, 251, 250))
+        self.assertEqual(reply.model_version, "gemini-3.8-flash-001")
+
+    def test_no_thinking_reported_is_zero(self):
+        reply = reply_from_response(gemini_response(candidates=2, thoughts=None), "m")
+        self.assertEqual((reply.output_tokens, reply.thinking_tokens), (2, 0))
+
+    def test_thinking_without_reply_tokens(self):
+        # A reply cut off while thinking may have no candidate tokens.
+        reply = reply_from_response(gemini_response(text=None, candidates=None, thoughts=1024), "m")
+        self.assertEqual((reply.text, reply.output_tokens, reply.thinking_tokens), ("", 1024, 1024))
+
+    def test_no_usage_metadata(self):
+        reply = reply_from_response(gemini_response(usage=False), "m")
+        self.assertEqual((reply.input_tokens, reply.output_tokens, reply.thinking_tokens),
+                         (None, None, None))
+
+    def test_thinking_tokens_in_trace_and_summary(self):
+        class ThinkingFake(FakeClient):
+            def __call__(self, prompt, seed=None):
+                return reply_from_response(gemini_response(text=super().__call__(prompt).text,
+                                                           thoughts=40), "gemini-3.8-flash")
+
+        player, _, records, outcome = play(ThinkingFake("right", "jump_right"), max_model_calls=2)
+        self.assertEqual([(r["output_tokens"], r["thinking_tokens"]) for r in records],
+                         [(41, 40), (41, 40)])
+        summary = summarize(records, outcome, player, model="gemini-3.8-flash", room="A", seed=1,
+                            git_commit="x")
+        self.assertEqual((summary["output_tokens"], summary["thinking_tokens"]), (82, 80))
+
+    def test_fallback_has_no_thinking_tokens(self):
+        _, _, records, _ = play(FakeClient(RuntimeError("503")), max_model_calls=1)
+        self.assertIsNone(records[0]["thinking_tokens"])
 
 
 def obs(grid, row, col, gate="closed"):
