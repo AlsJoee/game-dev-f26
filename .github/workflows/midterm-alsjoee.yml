@@ -1,0 +1,39 @@
+name: Midterm alsjoee
+on:
+  pull_request:
+    paths:
+      - 'midterms/alsjoee/**'
+      - '.github/workflows/midterm-alsjoee.yml'
+permissions:
+  contents: read
+jobs:
+  tests:
+    name: Prince of Persia One Room tests (no model calls)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: midterms/alsjoee
+    # No secrets and no cloud settings: every model test uses a fake client.
+    env:
+      GOOGLE_CLOUD_PROJECT: ''
+      GOOGLE_CLOUD_LOCATION: ''
+      COURSE_MODEL: ''
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install only this folder's pyproject.toml dependencies
+        run: |
+          python - <<'EOF' > "$RUNNER_TEMP/requirements.txt"
+          import tomllib
+          with open("pyproject.toml", "rb") as f:
+              print("\n".join(tomllib.load(f)["project"]["dependencies"]))
+          EOF
+          cat "$RUNNER_TEMP/requirements.txt"
+          python -m pip install -r "$RUNNER_TEMP/requirements.txt"
+      - name: Run tests
+        run: python -m unittest discover tests -v
