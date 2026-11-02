@@ -6,7 +6,7 @@ import unittest
 
 from pop_room.episode import PopRoomEpisode
 from pop_room.model_player import (LIMIT_REASON, ModelPlayer, ModelReply, build_prompt,
-                                   parse_action, run_episode, summarize)
+                                   local_view, parse_action, run_episode, summarize)
 from pop_room.rules_text import intro
 
 _, LEGEND_LINES, RULE_LINES = intro(40).split("\n\n")  # goal, "Map legend:" block, "Rules:" block
@@ -144,6 +144,65 @@ class PromptTest(unittest.TestCase):
         moves = [line for line in last.splitlines() if line.startswith("- ")]
         self.assertEqual(moves, ["- wait: wait", "- jump_right: jump_right"])
         self.assertIn("Your last 1 moves", client.prompts[1])
+
+
+
+def obs(grid, row, col, gate="closed"):
+    """A hand-made observation; local_view must use only these fields."""
+    return {"map": grid, "prince": {"row": row, "col": col}, "health": 2, "gate": gate,
+            "steps_used": 0, "steps_left": 40, "last_result": ""}
+
+
+class LocalViewTest(unittest.TestCase):
+    def test_room_a_start_is_at_the_edge_of_the_map(self):
+        observation = PopRoomEpisode().reset(room="A")
+        self.assertEqual(local_view(observation), "Next to you: left = edge of map; right = floor; "
+                                                   "above = edge of map; below = edge of map")
+
+    def test_gap_over_spikes(self):
+        grid = [".. .",
+                "#.^#"]
+        self.assertEqual(local_view(obs(grid, 0, 1)),
+                         "Next to you: left = floor; right = gap (below it: spikes, fall 1 floor); "
+                         "above = edge of map; below = floor")
+
+    def test_gap_counts_floors_and_falling_off(self):
+        grid = [". . ",
+                "#   ",
+                "#P. "]
+        self.assertEqual(local_view(obs(grid, 0, 2)),
+                         "Next to you: left = gap (below it: plate, fall 2 floors); "
+                         "right = gap (below it: nothing; you would fall off the map); "
+                         "above = edge of map; below = gap")
+
+    def test_gate_state_wall_and_exit(self):
+        grid = ["###",
+                "G.E",
+                "..."]
+        self.assertEqual(local_view(obs(grid, 1, 1, gate="open")),
+                         "Next to you: left = gate (open); right = exit; above = wall; below = floor")
+
+    def test_room_c_after_two_steps(self):
+        ep = PopRoomEpisode()
+        ep.reset(room="C")
+        ep.step("prince", "right")
+        observation = ep.step("prince", "right")["observation"]
+        self.assertEqual(local_view(observation), "Next to you: left = floor; right = spikes; "
+                                                   "above = floor; below = edge of map")
+
+    def test_local_view_only_with_view_local(self):
+        observation = PopRoomEpisode().reset(room="A")
+        self.assertNotIn("Next to you:", build_prompt(observation, ["right"], [], 40))
+        self.assertIn(local_view(observation),
+                      build_prompt(observation, ["right"], [], 40, view="local"))
+        with self.assertRaises(ValueError):
+            build_prompt(observation, ["right"], [], 40, view="far")
+
+    def test_view_recorded_in_trace_summary(self):
+        player, _, records, outcome = play(FakeClient("right"), max_model_calls=1, view="local")
+        self.assertIn("Next to you:", records[0]["prompt"])
+        summary = summarize(records, outcome, player, model="fake", room="A", seed=1, git_commit="x")
+        self.assertEqual(summary["view"], "local")
 
 
 if __name__ == "__main__":

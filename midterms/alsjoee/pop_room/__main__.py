@@ -2,8 +2,8 @@
 
     python -m pop_room play --room A
     python -m pop_room baseline --room A [--seed N]
-    python -m pop_room model --room A --seed N [--history H]
-    python -m pop_room evaluate --rooms A B C --trials 2 --history 0 5 [--allow-dirty]
+    python -m pop_room model --room A --seed N [--history H] [--view map|local]
+    python -m pop_room evaluate --rooms A B C --trials 2 --history 0 5 [--view map|local] [--allow-dirty]
 """
 
 import argparse
@@ -62,20 +62,20 @@ def baseline(episode, room, seed):
     print_outcome(episode)
 
 
-def model(episode, room, seed, history, max_model_calls):
+def model(episode, room, seed, history, max_model_calls, view):
     try:
         settings = mp.vertex_settings()
     except mp.ModelConfigError as error:
         sys.exit(str(error))
-    path = ev.trace_path(room, seed, history, settings["model"])
+    path = ev.trace_path(room, seed, history, settings["model"], view=view)
     if path.exists():
         # Checked before any call, so no credits are spent on a run that cannot be saved.
         sys.exit(f"{path} already exists; move it or use another seed.")
     commit = ev.commit_label(*ev.git_state())
     client = mp.VertexClient(settings["project"], settings["location"], settings["model"])
     player = mp.ModelPlayer(client, history=history, max_model_calls=max_model_calls,
-                            max_steps=episode.max_steps, seed=seed)
-    print(f"room {room}  seed {seed}  history {history}  model {settings['model']} (live Vertex AI call)")
+                            max_steps=episode.max_steps, seed=seed, view=view)
+    print(f"room {room}  seed {seed}  history {history}  view {view}  model {settings['model']} (live Vertex AI call)")
 
     def show_step(record):
         if record["fallback"]:
@@ -97,7 +97,7 @@ def model(episode, room, seed, history, max_model_calls):
     print(f"trace: {path}")
 
 
-def evaluate(rooms, trials, histories, max_model_calls, allow_dirty):
+def evaluate(rooms, trials, histories, max_model_calls, allow_dirty, view):
     try:
         settings = mp.vertex_settings()
         commit = ev.require_clean(*ev.git_state(), allow_dirty)
@@ -106,20 +106,21 @@ def evaluate(rooms, trials, histories, max_model_calls, allow_dirty):
     model_id = settings["model"]
     prices = ev.load_prices()
     episodes = len(rooms) * trials * (1 + len(histories))
-    print(f"rooms {' '.join(rooms)}  trials {trials}  history {' '.join(map(str, histories))}  "
+    print(f"rooms {' '.join(rooms)}  trials {trials}  history {' '.join(map(str, histories))}  view {view}  "
           f"model {model_id}  commit {commit}")
     print(f"{episodes} episodes, {len(rooms) * trials * len(histories)} with live Vertex AI calls")
     client = mp.VertexClient(settings["project"], settings["location"], model_id)
 
     def show_row(row):
-        who = "bfs" if row["player"] == "bfs" else f"model h{row['history']}"
-        print(f"{row['room']} seed {row['seed']} {who:9}: {row['outcome']}  steps {row['steps']}  "
+        who = "bfs" if row["player"] == "bfs" else f"model h{row['history']} {row['view']}"
+        print(f"{row['room']} seed {row['seed']} {who:15}: {row['outcome']}  steps {row['steps']}  "
               f"invalid {row['invalid_actions']}  fallbacks {row['fallbacks']}  "
               f"cost {row['est_cost_usd']}")
 
     try:
         rows = ev.run_evaluation(rooms, trials, histories, client, model=model_id, commit=commit,
-                                 prices=prices, max_model_calls=max_model_calls, on_row=show_row)
+                                 prices=prices, max_model_calls=max_model_calls, view=view,
+                                 on_row=show_row)
     except FileExistsError as error:
         sys.exit(str(error))
     ev.append_csv(ev.RESULTS / "results.csv", rows)
@@ -147,11 +148,15 @@ def main(argv=None):
         if name == "model":
             sub.add_argument("--history", type=int, default=0, help="last N moves shown (default 0)")
             sub.add_argument("--max-model-calls", type=int, default=mp.MAX_MODEL_CALLS)
+            sub.add_argument("--view", choices=mp.VIEWS, default="map",
+                             help="local adds a line naming the tiles next to the Prince (default map)")
     sub = commands.add_parser("evaluate")
     sub.add_argument("--rooms", nargs="+", default=["A", "B", "C"], choices=rooms)
     sub.add_argument("--trials", type=int, default=2, help="seeds 1..N (default 2)")
     sub.add_argument("--history", nargs="+", type=int, default=[0], help="one or more history sizes")
     sub.add_argument("--max-model-calls", type=int, default=mp.MAX_MODEL_CALLS)
+    sub.add_argument("--view", choices=mp.VIEWS, default="map",
+                     help="local adds a line naming the tiles next to the Prince (default map)")
     sub.add_argument("--allow-dirty", action="store_true",
                      help="run with uncommitted changes; rows are marked -dirty")
     args = parser.parse_args(argv)
@@ -167,12 +172,12 @@ def main(argv=None):
     elif args.command == "model":
         if args.seed is None:
             parser.error("model needs --seed so the trace can be named and repeated")
-        model(episode, args.room, args.seed, args.history, args.max_model_calls)
+        model(episode, args.room, args.seed, args.history, args.max_model_calls, args.view)
     else:
         if args.trials < 1:
             parser.error("--trials must be 1 or more")
         evaluate(args.rooms, args.trials, list(dict.fromkeys(histories)), args.max_model_calls,
-                 args.allow_dirty)
+                 args.allow_dirty, args.view)
 
 
 if __name__ == "__main__":

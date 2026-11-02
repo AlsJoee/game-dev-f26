@@ -27,9 +27,11 @@ PRICES = ROOT / "prices.json"
 OUTPUT_DIRS = ("traces/", "results/")
 UNKNOWN = "unknown"
 
-COLUMNS = ["date", "git_commit", "player", "model", "history", "room", "seed", "outcome",
+COLUMNS = ["date", "git_commit", "player", "model", "view", "history", "room", "seed", "outcome",
            "score", "steps", "invalid_actions", "fallbacks", "model_calls", "input_tokens",
            "output_tokens", "total_latency_s", "est_cost_usd"]
+# The columns before "view" existed; every model row then used the map view.
+COLUMNS_BEFORE_VIEW = [c for c in COLUMNS if c != "view"]
 
 
 class DirtyTreeError(RuntimeError):
@@ -70,9 +72,11 @@ def require_clean(sha, dirty, allow_dirty):
 
 # --- traces ----------------------------------------------------------------
 
-def trace_path(room, seed, history, model, traces_dir=None):
+def trace_path(room, seed, history, model, traces_dir=None, view="map"):
+    # Map-view names are unchanged from before the view option, so old traces keep their names.
     safe_model = re.sub(r"[^A-Za-z0-9._-]", "_", model)
-    return Path(traces_dir or TRACES) / f"{room}-seed{seed}-h{history}-{safe_model}.jsonl"
+    view_part = "" if view == "map" else f"-{view}"
+    return Path(traces_dir or TRACES) / f"{room}-seed{seed}-h{history}{view_part}-{safe_model}.jsonl"
 
 
 def write_trace(path, records, summary):
@@ -124,7 +128,7 @@ def bfs_row(room, seed, *, today, commit):
         action = player.choose(observation, episode.legal_actions(PLAYER_ID))
         observation = episode.step(PLAYER_ID, action)["observation"]
     outcome = episode.outcome()
-    return {"date": today, "git_commit": commit, "player": "bfs", "model": "", "history": "",
+    return {"date": today, "git_commit": commit, "player": "bfs", "model": "", "view": "", "history": "",
             "room": room, "seed": seed, "outcome": outcome["reason"], "score": outcome["score"],
             "steps": outcome["steps"], "invalid_actions": outcome["invalid_actions"],
             "fallbacks": sum(t["fallback"] for t in player.trace), "model_calls": 0,
@@ -133,7 +137,7 @@ def bfs_row(room, seed, *, today, commit):
 
 def model_row(summary, *, today, price):
     return {"date": today, "git_commit": summary["git_commit"], "player": "model",
-            "model": summary["model"], "history": summary["history"], "room": summary["room"],
+            "model": summary["model"], "view": summary["view"], "history": summary["history"], "room": summary["room"],
             "seed": summary["seed"], "outcome": summary["outcome"], "score": summary["score"],
             "steps": summary["steps"], "invalid_actions": summary["invalid_actions"],
             "fallbacks": summary["fallbacks"], "model_calls": summary["model_calls"],
@@ -142,16 +146,17 @@ def model_row(summary, *, today, price):
             "est_cost_usd": est_cost(summary["input_tokens"], summary["output_tokens"], price)}
 
 
-def planned_traces(rooms, trials, histories, model, traces_dir=None):
-    return [trace_path(room, seed, h, model, traces_dir)
+def planned_traces(rooms, trials, histories, model, traces_dir=None, view="map"):
+    return [trace_path(room, seed, h, model, traces_dir, view)
             for room in rooms for seed in range(1, trials + 1) for h in histories]
 
 
 def run_evaluation(rooms, trials, histories, client, *, model, commit, prices, today=None,
-                   max_model_calls=mp.MAX_MODEL_CALLS, traces_dir=None, on_row=None):
+                   max_model_calls=mp.MAX_MODEL_CALLS, traces_dir=None, view="map", on_row=None):
     """Play every episode and write model traces. Returns the result rows."""
     today = today or Date.today().isoformat()
-    existing = [p for p in planned_traces(rooms, trials, histories, model, traces_dir) if p.exists()]
+    existing = [p for p in planned_traces(rooms, trials, histories, model, traces_dir, view)
+                if p.exists()]
     if existing:
         # Checked before any call, so no credits are spent on a run that cannot be saved.
         raise FileExistsError("Traces already exist; move them first: "
@@ -167,11 +172,12 @@ def run_evaluation(rooms, trials, histories, client, *, model, commit, prices, t
                 else:
                     episode = PopRoomEpisode()
                     player = mp.ModelPlayer(client, history=history, max_model_calls=max_model_calls,
-                                            max_steps=episode.max_steps, seed=seed)
+                                            max_steps=episode.max_steps, seed=seed, view=view)
                     records, outcome = mp.run_episode(episode, player, room, seed)
                     summary = mp.summarize(records, outcome, player, model=model, room=room,
                                            seed=seed, git_commit=commit)
-                    write_trace(trace_path(room, seed, history, model, traces_dir), records, summary)
+                    write_trace(trace_path(room, seed, history, model, traces_dir, view),
+                                records, summary)
                     row = model_row(summary, today=today, price=price)
                 rows.append(row)
                 if on_row:
@@ -187,7 +193,9 @@ def append_csv(path, rows):
     if path.exists() and path.stat().st_size:
         with path.open(newline="") as f:
             header = next(csv.reader(f), None)
-        if header != COLUMNS:
+        if header == COLUMNS_BEFORE_VIEW:
+            _add_view_column(path)
+        elif header != COLUMNS:
             raise ValueError(f"{path} has different columns; move it before appending.")
         new = False
     else:
@@ -199,9 +207,22 @@ def append_csv(path, rows):
         writer.writerows(rows)
 
 
+def _add_view_column(path):
+    """Upgrade a results file written before --view existed: its model rows used the map view."""
+    with path.open(newline="") as f:
+        rows = list(csv.DictReader(f))
+    for row in rows:
+        row["view"] = "map" if row["player"] == "model" else ""
+    with path.open("w", newline="") as f:
+        writer = csv.DictWriter(f, fieldnames=COLUMNS)
+        writer.writeheader()
+        writer.writerows(rows)
+
+
 def _group_key(row):
     history = row["history"]
-    return (0 if row["player"] == "bfs" else 1, -1 if history == "" else int(history), row["room"])
+    return (0 if row["player"] == "bfs" else 1, row["view"],
+            -1 if history == "" else int(history), row["room"])
 
 
 def summary_markdown(rows, *, today, model, commit, source):
@@ -219,9 +240,9 @@ def summary_markdown(rows, *, today, model, commit, source):
         "",
         "Costs are estimates from prices.json, not billed amounts.",
         "",
-        "| Player | History | Room | Wins/trials | Mean steps | Invalid actions | Fallbacks "
+        "| Player | View | History | Room | Wins/trials | Mean steps | Invalid actions | Fallbacks "
         "| Mean latency (s) | Total tokens | Est. cost (USD) |",
-        "|---|---|---|---|---|---|---|---|---|---|",
+        "|---|---|---|---|---|---|---|---|---|---|---|",
     ]
     for key in sorted(groups):
         group = groups[key]
@@ -230,7 +251,8 @@ def summary_markdown(rows, *, today, model, commit, source):
         cost = UNKNOWN if UNKNOWN in costs else f"{sum(costs):.6f}"
         first = group[0]
         lines.append(
-            f"| {first['player']} | {first['history'] if first['history'] != '' else '-'} "
+            f"| {first['player']} | {first['view'] or '-'} "
+            f"| {first['history'] if first['history'] != '' else '-'} "
             f"| {first['room']} | {sum(r['score'] for r in group)}/{n} "
             f"| {sum(r['steps'] for r in group) / n:.1f} "
             f"| {sum(r['invalid_actions'] for r in group)} | {sum(r['fallbacks'] for r in group)} "

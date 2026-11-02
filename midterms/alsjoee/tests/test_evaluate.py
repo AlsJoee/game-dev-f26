@@ -112,7 +112,7 @@ class RunAndCsvTest(TempDirTest):
             reader = csv.DictReader(f)
             rows = list(reader)
         self.assertEqual(reader.fieldnames, [
-            "date", "git_commit", "player", "model", "history", "room", "seed", "outcome",
+            "date", "git_commit", "player", "model", "view", "history", "room", "seed", "outcome",
             "score", "steps", "invalid_actions", "fallbacks", "model_calls", "input_tokens",
             "output_tokens", "total_latency_s", "est_cost_usd"])
         self.assertEqual(len(rows), 4)  # one header, four rows from two runs
@@ -124,6 +124,39 @@ class RunAndCsvTest(TempDirTest):
         ev.append_csv(path, self.evaluate(prices={}, histories=(0,), trials=1))
         with path.open(newline="") as f:
             self.assertEqual(list(csv.DictReader(f))[1]["est_cost_usd"], "unknown")
+
+    def test_view_in_rows_traces_and_names(self):
+        rows = self.evaluate(histories=(0,), trials=1)
+        self.assertEqual([(r["player"], r["view"]) for r in rows], [("bfs", ""), ("model", "map")])
+        rows = ev.run_evaluation(["A"], 1, [0], SolvingClient(), model=MODEL, commit="abc123",
+                                 prices=PRICES, today="2026-11-02", traces_dir=self.tmp / "traces",
+                                 view="local")
+        self.assertEqual(rows[1]["view"], "local")
+        names = sorted(p.name for p in (self.tmp / "traces").iterdir())
+        self.assertEqual(names, [f"A-seed1-h0-{MODEL}.jsonl", f"A-seed1-h0-local-{MODEL}.jsonl"])
+        lines = (self.tmp / "traces" / names[1]).read_text().splitlines()
+        self.assertEqual(json.loads(lines[-1])["view"], "local")
+        self.assertIn("Next to you:", json.loads(lines[0])["prompt"])
+        self.assertNotIn("Next to you:", json.loads(
+            (self.tmp / "traces" / names[0]).read_text().splitlines()[0])["prompt"])
+
+    def test_results_file_from_before_view_is_upgraded(self):
+        path = self.tmp / "results.csv"
+        old = ev.COLUMNS_BEFORE_VIEW
+        with path.open("w", newline="") as f:
+            writer = csv.DictWriter(f, fieldnames=old)
+            writer.writeheader()
+            for row in self.evaluate(histories=(0,), trials=1):
+                writer.writerow({k: row[k] for k in old})
+        ev.append_csv(path, ev.run_evaluation(
+            ["A"], 1, [0], SolvingClient(), model=MODEL, commit="abc123", prices=PRICES,
+            today="2026-11-02", traces_dir=self.tmp / "traces", view="local"))
+        with path.open(newline="") as f:
+            reader = csv.DictReader(f)
+            rows = list(reader)
+        self.assertEqual(reader.fieldnames, ev.COLUMNS)
+        self.assertEqual([(r["player"], r["view"]) for r in rows],
+                         [("bfs", ""), ("model", "map"), ("bfs", ""), ("model", "local")])
 
     def test_csv_with_other_columns_is_not_appended(self):
         path = self.tmp / "results.csv"
@@ -143,10 +176,20 @@ class SummaryTest(TempDirTest):
             self.assertIn(line, text)
         table = [line for line in text.splitlines() if line.startswith("| ") and "---" not in line]
         self.assertEqual(table[1:], [
-            "| bfs | - | A | 2/2 | 7.0 | 0 | 0 | 0.00 | 0 | 0.000000 |",
-            "| model | 0 | A | 2/2 | 7.0 | 0 | 0 | 0.00 | 1456 | 0.000812 |",
-            "| model | 5 | A | 2/2 | 7.0 | 0 | 0 | 0.00 | 1456 | unknown |",
+            "| bfs | - | - | A | 2/2 | 7.0 | 0 | 0 | 0.00 | 0 | 0.000000 |",
+            "| model | map | 0 | A | 2/2 | 7.0 | 0 | 0 | 0.00 | 1456 | 0.000812 |",
+            "| model | map | 5 | A | 2/2 | 7.0 | 0 | 0 | 0.00 | 1456 | unknown |",
         ])
+
+    def test_summary_groups_by_view(self):
+        rows = self.evaluate(histories=(0,), trials=1)
+        rows += [r for r in ev.run_evaluation(
+            ["A"], 1, [0], SolvingClient(), model=MODEL, commit="abc123", prices=PRICES,
+            today="2026-11-02", traces_dir=self.tmp / "traces", view="local") if r["player"] == "model"]
+        text = ev.summary_markdown(rows, today="2026-11-02", model=MODEL, commit="abc123", source="x")
+        self.assertIn("| Player | View | History | Room |", text)
+        views = [line.split(" | ")[1] for line in text.splitlines() if line.startswith("| model")]
+        self.assertEqual(views, ["local", "map"])
 
     def test_price_source_says_when_prices_are_missing(self):
         self.assertIn("unknown", ev.price_source({}, MODEL))

@@ -2,7 +2,9 @@
 
 The player sees only what a human player sees: the rules text from the play
 intro, the current observation, the legal actions and, optionally, its own
-last N (action, result) pairs. It returns one action string; the episode
+last N (action, result) pairs. With view="local" it also gets one line naming
+the tiles next to the Prince, worked out from the observed map alone. It
+returns one action string; the episode
 decides whether it is accepted. It never touches the World.
 
 The model client is any callable client(prompt, seed) -> ModelReply that may
@@ -19,11 +21,15 @@ import time
 
 from .episode import PLAYER_ID
 from .rules_text import intro, render
+from .world import EMPTY, EXIT, FLOOR, GATE, PLATE, SPIKES, START, WALL
 
 DEFAULT_MODEL = "gemini-3.5-flash-lite"
 MAX_MODEL_CALLS = 60
 TIMEOUT_S = 30.0
 LIMIT_REASON = "model-call limit"
+VIEWS = ("map", "local")
+TILE_NAMES = {FLOOR: "floor", START: "floor", EMPTY: "gap", SPIKES: "spikes", PLATE: "plate",
+              GATE: "gate", WALL: "wall", EXIT: "exit"}
 
 ACTION_WORDS = re.compile(r"\b(jump[ _-]?left|jump[ _-]?right|left|right|climb|wait)\b")
 
@@ -104,13 +110,64 @@ def parse_action(reply, legal_actions):
     return None
 
 
-def build_prompt(observation, legal_actions, history, max_steps):
+def _tile(grid, row, col):
+    if 0 <= row < len(grid) and 0 <= col < len(grid[row]):
+        return grid[row][col]
+    return None
+
+
+def _name(tile, gate):
+    if tile is None:
+        return "edge of map"
+    if tile == GATE:
+        return f"gate ({gate})"
+    return TILE_NAMES.get(tile, f"unknown tile {tile!r}")
+
+
+def _below_gap(grid, row, col):
+    """What a Prince stepping into the gap at (row, col) would land on, by the observed map."""
+    fallen = 0
+    while _tile(grid, row, col) == EMPTY:
+        row, fallen = row + 1, fallen + 1
+    tile = _tile(grid, row, col)
+    if tile is None:
+        return "nothing; you would fall off the map"
+    name = TILE_NAMES.get(tile, f"unknown tile {tile!r}")
+    return f"{name}, fall {fallen} floor{'s' if fallen > 1 else ''}"
+
+
+def local_view(observation):
+    """One line naming the tiles left, right, above and below the Prince.
+
+    Uses only the observation's map, position and gate state. For a gap on the
+    left or right it also says what lies below it, since walking there means falling.
+    """
+    grid, gate = observation["map"], observation["gate"]
+    row, col = observation["prince"]["row"], observation["prince"]["col"]
+    parts = []
+    for side, (r, c) in (("left", (row, col - 1)), ("right", (row, col + 1)),
+                         ("above", (row - 1, col)), ("below", (row + 1, col))):
+        tile = _tile(grid, r, c)
+        text = _name(tile, gate)
+        if tile == EMPTY and side in ("left", "right"):
+            text += f" (below it: {_below_gap(grid, r, c)})"
+        parts.append(f"{side} = {text}")
+    return "Next to you: " + "; ".join(parts)
+
+
+def build_prompt(observation, legal_actions, history, max_steps, view="map"):
     """Everything the model sees: rules, observation, legal actions, own history."""
+    if view not in VIEWS:
+        raise ValueError(f"view must be one of {VIEWS}")
     parts = [
         intro(max_steps),
         "",
         "Current map (@ is you):",
         render(observation),
+    ]
+    if view == "local":
+        parts.append(local_view(observation))
+    parts += [
         "",
         "Observation:",
         json.dumps(observation),
@@ -126,9 +183,12 @@ def build_prompt(observation, legal_actions, history, max_steps):
 
 class ModelPlayer:
     def __init__(self, client, history=0, max_model_calls=MAX_MODEL_CALLS,
-                 timeout_s=TIMEOUT_S, max_steps=40, seed=None):
+                 timeout_s=TIMEOUT_S, max_steps=40, seed=None, view="map"):
         if history < 0:
             raise ValueError("history must be 0 or more")
+        if view not in VIEWS:
+            raise ValueError(f"view must be one of {VIEWS}")
+        self.view = view
         self.client = client
         self.history = history
         self.max_model_calls = max_model_calls
@@ -150,7 +210,7 @@ class ModelPlayer:
 
     def choose(self, observation, legal_actions):
         """Ask the model once. Returns the action to submit and what happened."""
-        prompt = build_prompt(observation, legal_actions, self.recent(), self.max_steps)
+        prompt = build_prompt(observation, legal_actions, self.recent(), self.max_steps, self.view)
         self.model_calls += 1
         started = time.monotonic()
         # A fresh thread per call: a hung call is abandoned, not waited on.
@@ -228,6 +288,6 @@ def summarize(records, outcome, player, *, model, room, seed, git_commit):
         "total_tokens": total("input_tokens") + total("output_tokens"),
         "total_latency_s": round(sum(r["latency_s"] for r in records), 3),
         "model": model, "model_versions": versions,
-        "history": player.history, "max_model_calls": player.max_model_calls,
+        "history": player.history, "view": player.view, "max_model_calls": player.max_model_calls,
         "room": room, "seed": seed, "git_commit": git_commit,
     }
