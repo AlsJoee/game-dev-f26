@@ -3,22 +3,18 @@
     python -m pop_room play --room A
     python -m pop_room baseline --room A [--seed N]
     python -m pop_room model --room A --seed N [--history H]
+    python -m pop_room evaluate --rooms A B C --trials 2 --history 0 5 [--allow-dirty]
 """
 
 import argparse
-import json
-from pathlib import Path
-import re
-import subprocess
 import sys
 
 from .baseline import BfsPlayer
 from .episode import PLAYER_ID, PopRoomEpisode
+from . import evaluate as ev
 from . import model_player as mp
 from .rooms import ROOMS
 from .rules_text import LEGEND, intro, render
-
-TRACES = Path(__file__).resolve().parent.parent / "traces"
 
 
 def show(observation, legal):
@@ -66,30 +62,16 @@ def baseline(episode, room, seed):
     print_outcome(episode)
 
 
-def git_commit():
-    """HEAD commit, with "-dirty" if the working tree has uncommitted changes."""
-    here = Path(__file__).resolve().parent
-    try:
-        sha = subprocess.run(["git", "rev-parse", "HEAD"], cwd=here, capture_output=True,
-                             text=True, check=True).stdout.strip()
-        dirty = subprocess.run(["git", "status", "--porcelain"], cwd=here, capture_output=True,
-                               text=True, check=True).stdout.strip()
-    except (OSError, subprocess.CalledProcessError):
-        return "unknown"
-    return sha + ("-dirty" if dirty else "")
-
-
 def model(episode, room, seed, history, max_model_calls):
     try:
         settings = mp.vertex_settings()
     except mp.ModelConfigError as error:
         sys.exit(str(error))
-    safe_model = re.sub(r"[^A-Za-z0-9._-]", "_", settings["model"])
-    path = TRACES / f"{room}-seed{seed}-h{history}-{safe_model}.jsonl"
+    path = ev.trace_path(room, seed, history, settings["model"])
     if path.exists():
         # Checked before any call, so no credits are spent on a run that cannot be saved.
         sys.exit(f"{path} already exists; move it or use another seed.")
-    commit = git_commit()
+    commit = ev.commit_label(*ev.git_state())
     client = mp.VertexClient(settings["project"], settings["location"], settings["model"])
     player = mp.ModelPlayer(client, history=history, max_model_calls=max_model_calls,
                             max_steps=episode.max_steps, seed=seed)
@@ -107,15 +89,45 @@ def model(episode, room, seed, history, max_model_calls):
     records, outcome = mp.run_episode(episode, player, room, seed, on_step=show_step)
     summary = mp.summarize(records, outcome, player, model=settings["model"], room=room,
                            seed=seed, git_commit=commit)
-    TRACES.mkdir(exist_ok=True)
-    with path.open("w") as out:
-        for line in (*records, summary):
-            out.write(json.dumps(line) + "\n")
+    ev.write_trace(path, records, summary)
     print(f"outcome: {summary['outcome']}  score {summary['score']}  steps {summary['steps']}  "
           f"invalid {summary['invalid_actions']}  fallbacks {summary['fallbacks']}  "
           f"model calls {summary['model_calls']}  tokens {summary['total_tokens']}  "
           f"latency {summary['total_latency_s']} s")
     print(f"trace: {path}")
+
+
+def evaluate(rooms, trials, histories, max_model_calls, allow_dirty):
+    try:
+        settings = mp.vertex_settings()
+        commit = ev.require_clean(*ev.git_state(), allow_dirty)
+    except (mp.ModelConfigError, ev.DirtyTreeError) as error:
+        sys.exit(str(error))
+    model_id = settings["model"]
+    prices = ev.load_prices()
+    episodes = len(rooms) * trials * (1 + len(histories))
+    print(f"rooms {' '.join(rooms)}  trials {trials}  history {' '.join(map(str, histories))}  "
+          f"model {model_id}  commit {commit}")
+    print(f"{episodes} episodes, {len(rooms) * trials * len(histories)} with live Vertex AI calls")
+    client = mp.VertexClient(settings["project"], settings["location"], model_id)
+
+    def show_row(row):
+        who = "bfs" if row["player"] == "bfs" else f"model h{row['history']}"
+        print(f"{row['room']} seed {row['seed']} {who:9}: {row['outcome']}  steps {row['steps']}  "
+              f"invalid {row['invalid_actions']}  fallbacks {row['fallbacks']}  "
+              f"cost {row['est_cost_usd']}")
+
+    try:
+        rows = ev.run_evaluation(rooms, trials, histories, client, model=model_id, commit=commit,
+                                 prices=prices, max_model_calls=max_model_calls, on_row=show_row)
+    except FileExistsError as error:
+        sys.exit(str(error))
+    ev.append_csv(ev.RESULTS / "results.csv", rows)
+    summary = ev.summary_markdown(rows, today=rows[0]["date"], model=model_id, commit=commit,
+                                  source=ev.price_source(prices, model_id))
+    (ev.RESULTS / "summary.md").write_text(summary)
+    print(f"results: {ev.RESULTS / 'results.csv'} (appended {len(rows)} rows)")
+    print(f"summary: {ev.RESULTS / 'summary.md'}")
 
 
 def print_outcome(episode):
@@ -126,23 +138,41 @@ def print_outcome(episode):
 
 def main(argv=None):
     parser = argparse.ArgumentParser(prog="python -m pop_room")
-    parser.add_argument("command", choices=["play", "baseline", "model"])
-    parser.add_argument("--room", default="A", choices=sorted(ROOMS))
-    parser.add_argument("--seed", type=int, default=None)
-    parser.add_argument("--history", type=int, default=0, help="model: last N moves shown (default 0)")
-    parser.add_argument("--max-model-calls", type=int, default=mp.MAX_MODEL_CALLS)
+    commands = parser.add_subparsers(dest="command", required=True)
+    rooms = sorted(ROOMS)
+    for name in ("play", "baseline", "model"):
+        sub = commands.add_parser(name)
+        sub.add_argument("--room", default="A", choices=rooms)
+        sub.add_argument("--seed", type=int, default=None)
+        if name == "model":
+            sub.add_argument("--history", type=int, default=0, help="last N moves shown (default 0)")
+            sub.add_argument("--max-model-calls", type=int, default=mp.MAX_MODEL_CALLS)
+    sub = commands.add_parser("evaluate")
+    sub.add_argument("--rooms", nargs="+", default=["A", "B", "C"], choices=rooms)
+    sub.add_argument("--trials", type=int, default=2, help="seeds 1..N (default 2)")
+    sub.add_argument("--history", nargs="+", type=int, default=[0], help="one or more history sizes")
+    sub.add_argument("--max-model-calls", type=int, default=mp.MAX_MODEL_CALLS)
+    sub.add_argument("--allow-dirty", action="store_true",
+                     help="run with uncommitted changes; rows are marked -dirty")
     args = parser.parse_args(argv)
-    if args.command == "model" and args.seed is None:
-        parser.error("model needs --seed so the trace can be named and repeated")
-    if args.history < 0:
+
+    histories = args.history if args.command == "evaluate" else [getattr(args, "history", 0)]
+    if any(h < 0 for h in histories):
         parser.error("--history must be 0 or more")
     episode = PopRoomEpisode()
     if args.command == "play":
         play(episode, args.room, args.seed)
     elif args.command == "baseline":
         baseline(episode, args.room, args.seed)
-    else:
+    elif args.command == "model":
+        if args.seed is None:
+            parser.error("model needs --seed so the trace can be named and repeated")
         model(episode, args.room, args.seed, args.history, args.max_model_calls)
+    else:
+        if args.trials < 1:
+            parser.error("--trials must be 1 or more")
+        evaluate(args.rooms, args.trials, list(dict.fromkeys(histories)), args.max_model_calls,
+                 args.allow_dirty)
 
 
 if __name__ == "__main__":

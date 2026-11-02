@@ -1,0 +1,10 @@
+{
+  "gemini-3.5-flash-lite": {
+    "input_usd_per_1m": 0.30,
+    "output_usd_per_1m": 2.50,
+    "location": "global",
+    "source": "https://cloud.google.com/model-garden/pricing",
+    "checked": "2026-11-02",
+    "note": "Global endpoint, standard (non-cached) text input and output, introductory rate valid through 2026-12-31."
+  }
+}
