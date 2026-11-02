@@ -1,8 +1,8 @@
 # Evaluation summary
 
 - Date: 2026-11-02
-- Model: gemini-3.5-flash-lite
-- Commit: 9fe5c194fde458853b52aeb1f6e32ac2f195ae56
+- Model: gemini-3.8-flash
+- Commit: c028466b5b7c6f0bdbc2b7546b7316447eebb54c
 - Price source: https://cloud.google.com/model-garden/pricing (checked 2026-11-02)
 - Episodes: 18
 
@@ -13,9 +13,9 @@ Costs are estimates from prices.json, not billed amounts.
 | bfs | - | - | A | 2/2 | 7.0 | 0 | 0 | 0.00 | 0 | 0.000000 |
 | bfs | - | - | B | 2/2 | 10.0 | 0 | 0 | 0.00 | 0 | 0.000000 |
 | bfs | - | - | C | 2/2 | 8.0 | 0 | 0 | 0.00 | 0 | 0.000000 |
-| model | local | 0 | A | 0/2 | 2.0 | 0 | 0 | 2.36 | 1402 | 0.000430 |
-| model | local | 0 | B | 0/2 | 40.0 | 0 | 0 | 41.36 | 29756 | 0.009102 |
-| model | local | 0 | C | 0/2 | 14.5 | 0 | 0 | 14.85 | 10414 | 0.003197 |
-| model | local | 5 | A | 0/2 | 2.0 | 0 | 0 | 2.73 | 1434 | 0.000438 |
-| model | local | 5 | B | 1/2 | 28.5 | 0 | 0 | 28.06 | 23447 | 0.007168 |
-| model | local | 5 | C | 0/2 | 4.5 | 0 | 0 | 6.21 | 3422 | 0.001055 |
+| model | local | 0 | A | 2/2 | 7.5 | 0 | 1 | 50.74 | 7815 | 0.014714 |
+| model | local | 0 | B | 2/2 | 28.5 | 0 | 1 | 237.81 | 66866 | 0.187625 |
+| model | local | 0 | C | 2/2 | 8.0 | 0 | 0 | 44.64 | 11965 | 0.027648 |
+| model | local | 5 | A | 2/2 | 7.0 | 0 | 0 | 35.42 | 8418 | 0.015763 |
+| model | local | 5 | B | 2/2 | 33.5 | 0 | 3 | 284.41 | 80691 | 0.223142 |
+| model | local | 5 | C | 2/2 | 8.0 | 0 | 0 | 40.58 | 13336 | 0.031386 |
