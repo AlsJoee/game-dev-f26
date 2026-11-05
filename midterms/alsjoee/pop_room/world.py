@@ -106,7 +106,9 @@ class World:
     def _resolve(self, parts):
         """Apply falling and the effect of the tile the Prince is on."""
         fallen = 0
-        while self.tile(self.row, self.col) == EMPTY:
+        # Walls are solid: an empty tile directly above a wall acts as floor.
+        while (self.tile(self.row, self.col) == EMPTY
+               and self.tile(self.row + 1, self.col) != WALL):
             self.row += 1
             fallen += 1
         if self.tile(self.row, self.col) is None:

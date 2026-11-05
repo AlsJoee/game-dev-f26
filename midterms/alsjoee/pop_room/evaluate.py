@@ -7,6 +7,10 @@ as uncommitted changes.
 
 Costs are estimates from prices.json. A price that has not been filled in
 gives "unknown", never zero.
+
+The summary covers every row in results.csv. Room B rows from before walls
+became solid (2026-11-04) played a different layout and rules, so they are
+shown as a separate room, "B (pre-fix)".
 """
 
 import csv
@@ -26,6 +30,10 @@ RESULTS = ROOT / "results"
 PRICES = ROOT / "prices.json"
 OUTPUT_DIRS = ("traces/", "results/")
 UNKNOWN = "unknown"
+# Every commit with results recorded before the wall fix. Room B changed after these.
+PRE_FIX_COMMITS = frozenset({"b31388b194bbcb33257427fe1e03cd8c5a314a4f",
+                             "9fe5c194fde458853b52aeb1f6e32ac2f195ae56",
+                             "c028466b5b7c6f0bdbc2b7546b7316447eebb54c"})
 
 COLUMNS = ["date", "git_commit", "player", "model", "view", "history", "room", "seed", "outcome",
            "score", "steps", "invalid_actions", "fallbacks", "model_calls", "input_tokens",
@@ -210,6 +218,19 @@ def append_csv(path, rows):
         writer.writerows(rows)
 
 
+def read_rows(path):
+    """Rows of a results file, with counts and amounts as numbers again."""
+    with Path(path).open(newline="") as f:
+        rows = list(csv.DictReader(f))
+    for row in rows:
+        for column in ("score", "steps", "invalid_actions", "fallbacks", "input_tokens", "output_tokens"):
+            row[column] = int(row[column])
+        row["total_latency_s"] = float(row["total_latency_s"])
+        if row["est_cost_usd"] != UNKNOWN:
+            row["est_cost_usd"] = float(row["est_cost_usd"])
+    return rows
+
+
 def _is_earlier_header(header):
     """True if header is COLUMNS with some ADDED_COLUMNS left out."""
     return header == [c for c in COLUMNS if c in header] and set(COLUMNS) - set(header) <= set(ADDED_COLUMNS)
@@ -229,30 +250,43 @@ def _add_columns(path):
         writer.writerows(rows)
 
 
+def room_label(row):
+    """The room as shown in the summary; room B before the wall fix is kept apart."""
+    pre_fix = row["git_commit"].removesuffix("-dirty") in PRE_FIX_COMMITS
+    return "B (pre-fix)" if row["room"] == "B" and pre_fix else row["room"]
+
+
 def _group_key(row):
     history = row["history"]
-    return (0 if row["player"] == "bfs" else 1, row["view"],
-            -1 if history == "" else int(history), row["room"])
+    return (0 if row["player"] == "bfs" else 1, row["model"], row["view"],
+            -1 if history == "" else int(history), room_label(row))
 
 
-def summary_markdown(rows, *, today, model, commit, source):
+def summary_markdown(rows, *, today, prices):
     groups = {}
     for row in rows:
         groups.setdefault(_group_key(row), []).append(row)
+    models = sorted({row["model"] for row in rows if row["model"]})
+    commits = list(dict.fromkeys(row["git_commit"] for row in rows))
+    sources = "; ".join(f"{model}: {price_source(prices, model)}" for model in models)
+    pre_fix = ["B (pre-fix) rows were recorded before walls became solid, on the old room B layout. "
+               "Do not compare them with B.", ""] if any(
+                   room_label(row) == "B (pre-fix)" for row in rows) else []
     lines = [
         "# Evaluation summary",
         "",
         f"- Date: {today}",
-        f"- Model: {model}",
-        f"- Commit: {commit}",
-        f"- Price source: {source}",
+        f"- Models: {', '.join(models)}",
+        f"- Commits: {', '.join(commits)}",
+        f"- Price sources: {sources}",
         f"- Episodes: {len(rows)}",
         "",
         "Costs are estimates from prices.json, not billed amounts.",
         "",
-        "| Player | View | History | Room | Wins/trials | Mean steps | Invalid actions | Fallbacks "
+        *pre_fix,
+        "| Player | Model | View | History | Room | Wins/trials | Mean steps | Invalid actions | Fallbacks "
         "| Mean latency (s) | Total tokens | Est. cost (USD) |",
-        "|---|---|---|---|---|---|---|---|---|---|---|",
+        "|---|---|---|---|---|---|---|---|---|---|---|---|",
     ]
     for key in sorted(groups):
         group = groups[key]
@@ -261,9 +295,9 @@ def summary_markdown(rows, *, today, model, commit, source):
         cost = UNKNOWN if UNKNOWN in costs else f"{sum(costs):.6f}"
         first = group[0]
         lines.append(
-            f"| {first['player']} | {first['view'] or '-'} "
+            f"| {first['player']} | {first['model'] or '-'} | {first['view'] or '-'} "
             f"| {first['history'] if first['history'] != '' else '-'} "
-            f"| {first['room']} | {sum(r['score'] for r in group)}/{n} "
+            f"| {room_label(first)} | {sum(r['score'] for r in group)}/{n} "
             f"| {sum(r['steps'] for r in group) / n:.1f} "
             f"| {sum(r['invalid_actions'] for r in group)} | {sum(r['fallbacks'] for r in group)} "
             f"| {sum(r['total_latency_s'] for r in group) / n:.2f} "

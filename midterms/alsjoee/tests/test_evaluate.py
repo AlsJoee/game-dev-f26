@@ -193,16 +193,15 @@ class SummaryTest(TempDirTest):
     def test_summary_table(self):
         rows = self.evaluate()
         rows[2]["est_cost_usd"] = "unknown"  # one unknown cost makes its group unknown
-        text = ev.summary_markdown(rows, today="2026-11-02", model=MODEL, commit="abc123",
-                                   source=ev.price_source(PRICES, MODEL))
-        for line in ("- Date: 2026-11-02", f"- Model: {MODEL}", "- Commit: abc123",
-                     "- Price source: https://example.test/prices (checked 2026-11-01)"):
+        text = ev.summary_markdown(rows, today="2026-11-02", prices=PRICES)
+        for line in ("- Date: 2026-11-02", f"- Models: {MODEL}", "- Commits: abc123",
+                     f"- Price sources: {MODEL}: https://example.test/prices (checked 2026-11-01)"):
             self.assertIn(line, text)
         table = [line for line in text.splitlines() if line.startswith("| ") and "---" not in line]
         self.assertEqual(table[1:], [
-            "| bfs | - | - | A | 2/2 | 7.0 | 0 | 0 | 0.00 | 0 | 0.000000 |",
-            "| model | map | 0 | A | 2/2 | 7.0 | 0 | 0 | 0.00 | 1456 | 0.000812 |",
-            "| model | map | 5 | A | 2/2 | 7.0 | 0 | 0 | 0.00 | 1456 | unknown |",
+            "| bfs | - | - | - | A | 2/2 | 7.0 | 0 | 0 | 0.00 | 0 | 0.000000 |",
+            f"| model | {MODEL} | map | 0 | A | 2/2 | 7.0 | 0 | 0 | 0.00 | 1456 | 0.000812 |",
+            f"| model | {MODEL} | map | 5 | A | 2/2 | 7.0 | 0 | 0 | 0.00 | 1456 | unknown |",
         ])
 
     def test_summary_groups_by_view(self):
@@ -210,10 +209,39 @@ class SummaryTest(TempDirTest):
         rows += [r for r in ev.run_evaluation(
             ["A"], 1, [0], SolvingClient(), model=MODEL, commit="abc123", prices=PRICES,
             today="2026-11-02", traces_dir=self.tmp / "traces", view="local") if r["player"] == "model"]
-        text = ev.summary_markdown(rows, today="2026-11-02", model=MODEL, commit="abc123", source="x")
-        self.assertIn("| Player | View | History | Room |", text)
-        views = [line.split(" | ")[1] for line in text.splitlines() if line.startswith("| model")]
+        text = ev.summary_markdown(rows, today="2026-11-02", prices=PRICES)
+        self.assertIn("| Player | Model | View | History | Room |", text)
+        views = [line.split(" | ")[2] for line in text.splitlines() if line.startswith("| model")]
         self.assertEqual(views, ["local", "map"])
+
+    def b_rows(self, commit, wins):
+        row = {"date": "2026-11-02", "git_commit": commit, "player": "model", "model": MODEL,
+               "view": "local", "history": 0, "room": "B", "seed": 1, "outcome": "x", "score": wins,
+               "steps": 10, "invalid_actions": 0, "fallbacks": 0, "model_calls": 10, "input_tokens": 1,
+               "output_tokens": 1, "thinking_tokens": 0, "total_latency_s": 1.0, "est_cost_usd": 0.5}
+        return [row]
+
+    def test_room_b_before_the_fix_is_kept_apart(self):
+        old = "c028466b5b7c6f0bdbc2b7546b7316447eebb54c"
+        rows = self.b_rows(old, 1) + self.b_rows(old + "-dirty", 1) + self.b_rows("newcommit", 0)
+        text = ev.summary_markdown(rows, today="2026-11-04", prices=PRICES)
+        table = [line for line in text.splitlines() if line.startswith("| model")]
+        self.assertEqual([line.split(" | ")[4:6] for line in table], [["B", "0/1"], ["B (pre-fix)", "2/2"]])
+        self.assertIn("B (pre-fix) rows were recorded before walls became solid", text)
+
+    def test_other_rooms_and_new_b_rows_have_no_pre_fix_label(self):
+        old = "c028466b5b7c6f0bdbc2b7546b7316447eebb54c"
+        room_a = {**self.b_rows(old, 1)[0], "room": "A"}
+        self.assertEqual(ev.room_label(room_a), "A")
+        text = ev.summary_markdown(self.b_rows("newcommit", 1), today="2026-11-04", prices=PRICES)
+        self.assertNotIn("pre-fix", text)
+
+    def test_summary_from_results_file_round_trips(self):
+        path = self.tmp / "results.csv"
+        rows = self.evaluate(histories=(0,), trials=1)
+        ev.append_csv(path, rows)
+        self.assertEqual(ev.summary_markdown(ev.read_rows(path), today="2026-11-02", prices=PRICES),
+                         ev.summary_markdown(rows, today="2026-11-02", prices=PRICES))
 
     def test_price_source_says_when_prices_are_missing(self):
         self.assertIn("unknown", ev.price_source({}, MODEL))
@@ -262,7 +290,22 @@ class DirtyTreeTest(TempDirTest):
         with (self.tmp / "results" / "results.csv").open(newline="") as f:
             rows = list(csv.DictReader(f))
         self.assertEqual({r["git_commit"] for r in rows}, {"abc-dirty"})
-        self.assertIn("- Commit: abc-dirty", (self.tmp / "results" / "summary.md").read_text())
+        self.assertIn("- Commits: abc-dirty", (self.tmp / "results" / "summary.md").read_text())
+
+    def test_summary_includes_rows_from_earlier_runs(self):
+        results = self.tmp / "results"
+        results.mkdir()
+        ev.append_csv(results / "results.csv", [
+            {**self.earlier_row(), "git_commit": "c028466b5b7c6f0bdbc2b7546b7316447eebb54c"}])
+        self.run_cli("--allow-dirty", dirty=False)
+        self.assertIn("| B (pre-fix) |", (results / "summary.md").read_text())
+        self.assertIn("| A |", (results / "summary.md").read_text())
+
+    def earlier_row(self):
+        return {"date": "2026-11-02", "player": "bfs", "model": "", "view": "", "history": "",
+                "room": "B", "seed": 1, "outcome": "reached the exit", "score": 1, "steps": 10,
+                "invalid_actions": 0, "fallbacks": 0, "model_calls": 0, "input_tokens": 0,
+                "output_tokens": 0, "thinking_tokens": 0, "total_latency_s": 0.0, "est_cost_usd": 0.0}
 
 
 if __name__ == "__main__":

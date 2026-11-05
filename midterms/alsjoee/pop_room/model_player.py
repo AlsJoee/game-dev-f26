@@ -137,6 +137,9 @@ def _below_gap(grid, row, col):
     """What a Prince stepping into the gap at (row, col) would land on, by the observed map."""
     fallen = 0
     while _tile(grid, row, col) == EMPTY:
+        if _tile(grid, row + 1, col) == WALL:  # walls are solid: the fall stops above one
+            drop = f", fall {fallen} floor{'s' if fallen > 1 else ''}" if fallen else ""
+            return f"wall; you would stop on top of it{drop}"
         row, fallen = row + 1, fallen + 1
     tile = _tile(grid, row, col)
     if tile is None:

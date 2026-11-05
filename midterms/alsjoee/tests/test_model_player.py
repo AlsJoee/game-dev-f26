@@ -10,6 +10,7 @@ from pop_room.model_player import (LIMIT_REASON, ModelPlayer, ModelReply, build_
                                    local_view, parse_action, reply_from_response, run_episode,
                                    summarize)
 from pop_room.rules_text import intro
+from pop_room.world import World
 
 _, LEGEND_LINES, RULE_LINES = intro(40).split("\n\n")  # goal, "Map legend:" block, "Rules:" block
 
@@ -222,6 +223,30 @@ class LocalViewTest(unittest.TestCase):
                          "Next to you: left = gap (below it: plate, fall 2 floors); "
                          "right = gap (below it: nothing; you would fall off the map); "
                          "above = edge of map; below = gap")
+
+    def test_gap_directly_above_a_wall_is_no_fall(self):
+        grid = [".. ",
+                "..#"]
+        self.assertEqual(local_view(obs(grid, 0, 1)),
+                         "Next to you: left = floor; right = gap (below it: wall; you would stop "
+                         "on top of it); above = edge of map; below = floor")
+
+    def test_gap_above_more_gap_then_a_wall_counts_floors_dropped(self):
+        grid = [".. ",
+                ".. ",
+                "..#"]
+        self.assertEqual(local_view(obs(grid, 0, 1)),
+                         "Next to you: left = floor; right = gap (below it: wall; you would stop "
+                         "on top of it, fall 1 floor); above = edge of map; below = floor")
+
+    def test_local_view_agrees_with_the_world_on_a_fall_onto_a_wall(self):
+        world = World(["S ",
+                       ". ",
+                       ".#"])
+        view = local_view(obs([". ", ". ", ".#"], 0, 0))
+        self.assertIn("right = gap (below it: wall; you would stop on top of it, fall 1 floor)", view)
+        self.assertIn("fell 1 floor", world.act("right"))
+        self.assertEqual((world.row, world.col), (1, 1))
 
     def test_gate_state_wall_and_exit(self):
         grid = ["###",

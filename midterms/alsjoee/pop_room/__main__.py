@@ -124,8 +124,8 @@ def evaluate(rooms, trials, histories, max_model_calls, allow_dirty, view):
     except FileExistsError as error:
         sys.exit(str(error))
     ev.append_csv(ev.RESULTS / "results.csv", rows)
-    summary = ev.summary_markdown(rows, today=rows[0]["date"], model=model_id, commit=commit,
-                                  source=ev.price_source(prices, model_id))
+    summary = ev.summary_markdown(ev.read_rows(ev.RESULTS / "results.csv"), today=rows[0]["date"],
+                                  prices=prices)
     (ev.RESULTS / "summary.md").write_text(summary)
     print(f"results: {ev.RESULTS / 'results.csv'} (appended {len(rows)} rows)")
     print(f"summary: {ev.RESULTS / 'summary.md'}")

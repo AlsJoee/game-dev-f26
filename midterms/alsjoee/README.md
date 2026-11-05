@@ -28,6 +28,7 @@ turn-based episode that a model player can be evaluated on.
 | 10 | Stepping on a pressure plate opens the gate for 3 turns; a closed gate blocks movement. | design | The original gate closes after real time; converted to turns. |
 | 11 | Reaching the exit wins. | observed | From memory of play; to verify. |
 | 12 | An episode ends after 40 steps. | design | Episode limit for evaluation. |
+| 13 | Walls are solid; a fall onto a wall stops on top of it | design | Decided 2026-11-04 after an invariant test found the Prince could land inside a wall; see `tests/test_regressions.py`. Not checked against the original game. |
 
 ## Declared evaluation suite (declared October 26, 2026, before tuning)
 
@@ -43,9 +44,11 @@ S. .P.G.E
 ```
 S...  ..#
 #. ...^.#
-..#  ...#
+...  ...#
 #^.....E#
 ```
+
+Corrected 2026-11-04: an invariant test found the Prince could land inside the wall at row 2, column 2; the wall became floor and walls became solid (see tests/test_regressions.py). Results for B from commit ac601e2 and earlier are pre-fix.
 
 **C: Plate below** (shortest solution: 8 moves)
 ```

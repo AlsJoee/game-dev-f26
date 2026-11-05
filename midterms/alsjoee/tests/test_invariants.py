@@ -35,7 +35,6 @@ def reachable(layout):
 
 
 STATES = [(room, world) for room, layout in ROOMS.items() for world in reachable(layout)]
-KNOWN_WALL_LANDINGS = {("B", 2, 2)}
 
 
 def wall_states():
@@ -54,26 +53,16 @@ class RuleInvariantTest(unittest.TestCase):
         for room, layout in ROOMS.items():
             self.assertGreater(len(reachable(layout)), 10, room)
 
-    def test_prince_is_always_on_the_grid_and_never_in_a_gap(self):
+    def test_prince_is_on_the_grid_and_in_a_gap_only_directly_above_a_wall(self):
         def check(world):
             tile = world.tile(world.row, world.col)
             if world.status == "dead" and world.death_reason == "fell off the bottom":
                 return  # the only way to leave the grid, and it ends the game
             self.assertIsNotNone(tile)
-            self.assertNotEqual(tile, EMPTY)
+            if tile == EMPTY:
+                self.assertEqual(world.tile(world.row + 1, world.col), WALL)
         self.check_each_state(check)
 
-    def test_no_wall_landings_beyond_the_known_one(self):
-        self.assertLessEqual(wall_states(), KNOWN_WALL_LANDINGS)
-
-    # KNOWN ISSUE, found 2026-11-02 by this test; rule decision pending.
-    # A fall stops on the first tile below that is not a gap, and a wall counts
-    # as one, so the Prince can end up inside a wall. This happens only in room B:
-    # walking left from (1,3) into the gap at (1,2) lands him in the wall at (2,2),
-    # and room B's declared 10-move shortest solution goes through that state.
-    # When the rule is fixed this test passes, unittest reports an unexpected
-    # success and CI fails: then remove this marker and KNOWN_WALL_LANDINGS.
-    @unittest.expectedFailure
     def test_prince_is_never_inside_a_wall(self):
         self.assertEqual(wall_states(), set())
 
