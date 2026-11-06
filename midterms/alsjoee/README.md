@@ -137,6 +137,14 @@ Run the BFS baseline, which prints its plan and each move:
 python -m pop_room baseline --room A
 ```
 
+To follow it on a screen recording, add `--show`. After every move this prints
+the map with `@` at the Prince's position, the action and the result, then pauses
+for `--delay` seconds (default 0.8). `--show` also works on the `model` command.
+
+```sh
+python -m pop_room baseline --room A --show --delay 0.8
+```
+
 Run the tests. They use a fake model client and make no network calls:
 
 ```sh

@@ -1,13 +1,14 @@
 """Command line, run from midterms/alsjoee/:
 
     python -m pop_room play --room A
-    python -m pop_room baseline --room A [--seed N]
-    python -m pop_room model --room A --seed N [--history H] [--view map|local]
+    python -m pop_room baseline --room A [--seed N] [--show] [--delay S]
+    python -m pop_room model --room A --seed N [--history H] [--view map|local] [--show] [--delay S]
     python -m pop_room evaluate --rooms A B C --trials 2 --history 0 5 [--view map|local] [--allow-dirty]
 """
 
 import argparse
 import sys
+import time
 
 from .baseline import BfsPlayer
 from .episode import PLAYER_ID, PopRoomEpisode
@@ -15,6 +16,8 @@ from . import evaluate as ev
 from . import model_player as mp
 from .rooms import ROOMS
 from .rules_text import LEGEND, intro, render
+
+DEFAULT_DELAY = 0.8
 
 
 def show(observation, legal):
@@ -26,6 +29,14 @@ def show(observation, legal):
     if observation["last_result"]:
         print(f"last: {observation['last_result']}")
     print("actions: " + ", ".join(legal))
+
+
+def show_move(observation, line, delay):
+    """The map after a move, the move and its result, then a pause for a screen recording."""
+    print()
+    print(render(observation))
+    print(line, flush=True)
+    time.sleep(delay)
 
 
 def play(episode, room, seed):
@@ -48,7 +59,7 @@ def play(episode, room, seed):
     print_outcome(episode)
 
 
-def baseline(episode, room, seed):
+def baseline(episode, room, seed, show=False, delay=DEFAULT_DELAY):
     observation = episode.reset(seed=seed, room=room)
     player = BfsPlayer()
     plan = player.plan(observation)
@@ -58,11 +69,15 @@ def baseline(episode, room, seed):
         result = episode.step(PLAYER_ID, action)
         observation = result["observation"]
         mark = " (fallback)" if player.trace[-1]["fallback"] else ""
-        print(f"{episode.steps:2d}. {action}{mark}: {result['text']}")
+        line = f"{episode.steps:2d}. {action}{mark}: {result['text']}"
+        if show:
+            show_move(observation, line, delay)
+        else:
+            print(line)
     print_outcome(episode)
 
 
-def model(episode, room, seed, history, max_model_calls, view):
+def model(episode, room, seed, history, max_model_calls, view, show=False, delay=DEFAULT_DELAY):
     try:
         settings = mp.vertex_settings()
     except mp.ModelConfigError as error:
@@ -84,7 +99,11 @@ def model(episode, room, seed, history, max_model_calls, view):
             move = f"invalid reply {record['raw_reply']!r}"
         else:
             move = record["action"]
-        print(f"{record['step']:2d}. {move}: {record['result']}  [{record['latency_s']:.2f} s]")
+        line = f"{record['step']:2d}. {move}: {record['result']}  [{record['latency_s']:.2f} s]"
+        if show:
+            show_move(episode.observe(PLAYER_ID), line, delay)
+        else:
+            print(line)
 
     records, outcome = mp.run_episode(episode, player, room, seed, on_step=show_step)
     summary = mp.summarize(records, outcome, player, model=settings["model"], room=room,
@@ -145,6 +164,11 @@ def main(argv=None):
         sub = commands.add_parser(name)
         sub.add_argument("--room", default="A", choices=rooms)
         sub.add_argument("--seed", type=int, default=None)
+        if name != "play":
+            sub.add_argument("--show", action="store_true",
+                             help="print the map after every move and pause, for a screen recording")
+            sub.add_argument("--delay", type=float, default=DEFAULT_DELAY,
+                             help=f"seconds to pause after each move with --show (default {DEFAULT_DELAY})")
         if name == "model":
             sub.add_argument("--history", type=int, default=0, help="last N moves shown (default 0)")
             sub.add_argument("--max-model-calls", type=int, default=mp.MAX_MODEL_CALLS)
@@ -164,15 +188,18 @@ def main(argv=None):
     histories = args.history if args.command == "evaluate" else [getattr(args, "history", 0)]
     if any(h < 0 for h in histories):
         parser.error("--history must be 0 or more")
+    if getattr(args, "delay", 0) < 0:
+        parser.error("--delay must be 0 or more")
     episode = PopRoomEpisode()
     if args.command == "play":
         play(episode, args.room, args.seed)
     elif args.command == "baseline":
-        baseline(episode, args.room, args.seed)
+        baseline(episode, args.room, args.seed, args.show, args.delay)
     elif args.command == "model":
         if args.seed is None:
             parser.error("model needs --seed so the trace can be named and repeated")
-        model(episode, args.room, args.seed, args.history, args.max_model_calls, args.view)
+        model(episode, args.room, args.seed, args.history, args.max_model_calls, args.view,
+              args.show, args.delay)
     else:
         if args.trials < 1:
             parser.error("--trials must be 1 or more")
