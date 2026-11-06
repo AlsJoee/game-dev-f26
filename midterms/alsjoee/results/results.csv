@@ -71,3 +71,21 @@ date,git_commit,player,model,view,history,room,seed,outcome,score,steps,invalid_
 2026-11-04,519909c2551c0db9419a26aed5c95f6373c87792,bfs,,,,B,2,reached the exit,1,10,0,0,0,0,0,0,0.0,0.0
 2026-11-04,519909c2551c0db9419a26aed5c95f6373c87792,model,gemini-3.8-flash,local,0,B,2,reached the exit,1,29,0,11,29,6706,13949,13931,309.427,0.057338
 2026-11-04,519909c2551c0db9419a26aed5c95f6373c87792,model,gemini-3.8-flash,local,5,B,2,reached the exit,1,14,0,1,14,5287,9395,9382,104.078,0.039197
+2026-11-06,cbdf1ed25b13ea1d5e482cca6a27d608a5c5e201,bfs,,,,H,1,reached the exit,1,10,0,0,0,0,0,0,0.0,0.0
+2026-11-06,cbdf1ed25b13ea1d5e482cca6a27d608a5c5e201,model,gemini-3.5-flash-lite,map,0,H,1,died: spikes,0,5,0,0,5,1742,5,0,6.716,0.000535
+2026-11-06,cbdf1ed25b13ea1d5e482cca6a27d608a5c5e201,model,gemini-3.5-flash-lite,map,5,H,1,died: spikes,0,3,0,0,3,1080,3,0,3.499,0.000331
+2026-11-06,cbdf1ed25b13ea1d5e482cca6a27d608a5c5e201,bfs,,,,H,2,reached the exit,1,10,0,0,0,0,0,0,0.0,0.0
+2026-11-06,cbdf1ed25b13ea1d5e482cca6a27d608a5c5e201,model,gemini-3.5-flash-lite,map,0,H,2,died: spikes,0,3,0,0,3,1043,3,0,3.308,0.00032
+2026-11-06,cbdf1ed25b13ea1d5e482cca6a27d608a5c5e201,model,gemini-3.5-flash-lite,map,5,H,2,died: spikes,0,5,0,0,5,1849,8,0,5.725,0.000575
+2026-11-06,cbdf1ed25b13ea1d5e482cca6a27d608a5c5e201,bfs,,,,H,1,reached the exit,1,10,0,0,0,0,0,0,0.0,0.0
+2026-11-06,cbdf1ed25b13ea1d5e482cca6a27d608a5c5e201,model,gemini-3.5-flash-lite,local,0,H,1,died: spikes,0,26,0,0,26,9674,27,0,30.27,0.00297
+2026-11-06,cbdf1ed25b13ea1d5e482cca6a27d608a5c5e201,model,gemini-3.5-flash-lite,local,5,H,1,died: spikes,0,6,0,0,6,2366,7,0,5.769,0.000727
+2026-11-06,cbdf1ed25b13ea1d5e482cca6a27d608a5c5e201,bfs,,,,H,2,reached the exit,1,10,0,0,0,0,0,0,0.0,0.0
+2026-11-06,cbdf1ed25b13ea1d5e482cca6a27d608a5c5e201,model,gemini-3.5-flash-lite,local,0,H,2,died: spikes,0,14,0,0,14,5210,15,0,14.653,0.0016
+2026-11-06,cbdf1ed25b13ea1d5e482cca6a27d608a5c5e201,model,gemini-3.5-flash-lite,local,5,H,2,died: spikes,0,4,0,0,4,1556,5,0,4.279,0.000479
+2026-11-06,cbdf1ed25b13ea1d5e482cca6a27d608a5c5e201,bfs,,,,H,1,reached the exit,1,10,0,0,0,0,0,0,0.0,0.0
+2026-11-06,cbdf1ed25b13ea1d5e482cca6a27d608a5c5e201,model,gemini-3.8-flash,local,0,H,1,reached the exit,1,12,0,0,12,4476,6017,6000,98.994,0.025921
+2026-11-06,cbdf1ed25b13ea1d5e482cca6a27d608a5c5e201,model,gemini-3.8-flash,local,5,H,1,reached the exit,1,10,0,0,10,4041,3926,3912,65.271,0.017753
+2026-11-06,cbdf1ed25b13ea1d5e482cca6a27d608a5c5e201,bfs,,,,H,2,reached the exit,1,10,0,0,0,0,0,0,0.0,0.0
+2026-11-06,cbdf1ed25b13ea1d5e482cca6a27d608a5c5e201,model,gemini-3.8-flash,local,0,H,2,reached the exit,1,13,0,3,13,3729,4490,4476,132.385,0.019634
+2026-11-06,cbdf1ed25b13ea1d5e482cca6a27d608a5c5e201,model,gemini-3.8-flash,local,5,H,2,reached the exit,1,11,0,1,11,4034,4737,4723,108.362,0.020789
