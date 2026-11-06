@@ -20,7 +20,7 @@ turn-based episode that a model player can be evaluated on.
 | 2 | Actions: `left`, `right`, `jump_left`, `jump_right`, `climb`, `wait`. One action per turn. | design | Turn-based adaptation of real-time controls. |
 | 3 | A jump clears exactly one empty tile and lands two tiles away. | assumed | From memory of play; to verify. |
 | 4 | `climb` moves up one floor onto the tile directly above. | assumed | From memory of play; to verify. |
-| 5 | Walking or jumping onto an empty tile makes the Prince fall to the floor below. | assumed | From memory of playing Prince of Persia (1989); not verified against the original. |
+| 5 | Walking or jumping onto an empty tile makes the Prince fall straight down to the first tile that is not empty. A wall stops the fall on the empty tile above it, so a gap directly above a wall is no drop at all (rule 13). A gap with only gaps below it, including any gap on the bottom row, leads off the bottom of the room (rule 14). | assumed | From memory of playing Prince of Persia (1989); not verified against the original. |
 | 6 | Falling 1 floor is safe. | assumed | From memory of playing Prince of Persia (1989); not verified against the original. |
 | 7 | Falling 2 floors costs 1 health. | assumed | From memory of playing Prince of Persia (1989); not verified against the original. |
 | 8 | Falling 3 or more floors kills the Prince. | assumed | From memory of playing Prince of Persia (1989); not verified against the original. |
@@ -29,6 +29,9 @@ turn-based episode that a model player can be evaluated on.
 | 11 | Reaching the exit wins. | assumed | From memory of playing Prince of Persia (1989); not verified against the original. |
 | 12 | An episode ends after 40 steps. | design | Episode limit for evaluation. |
 | 13 | Walls are solid; a fall onto a wall stops on top of it | design | Decided 2026-11-04 after an invariant test found the Prince could land inside a wall; see `tests/test_regressions.py`. Not checked against the original game. |
+| 14 | Falling off the bottom of the room kills you. | design | Chosen for a one-room game with no room below; `pop_room/world.py:115`. Not checked against the original game. Stated to players from 2026-11-06; prompts in traces from commit 44b0aa3 and earlier do not include it. |
+| 15 | A model call that takes over 30 s becomes a labelled `wait` fallback. A model episode ends with reason `time limit` and score 0 if, between moves, it has run for 600 s or more. | design | Limits for evaluation, added 2026-11-06; `pop_room/model_player.py:28-29,286-287`. Apply only to the model player. |
+| 16 | A model episode ends with reason `model unavailable` and score 0 after 5 model calls in a row fail or time out. If the 5th failure is on step 40, the reason is `step limit`. | design | Limit for evaluation, added 2026-11-06, so an outage is not recorded as a player running out of steps; `pop_room/model_player.py:32,280-281`. Applies only to the model player. |
 
 ## Declared evaluation suite (declared October 26, 2026, before tuning)
 
@@ -66,6 +69,8 @@ S..^ ..#
 ```
 
 Each situation is run twice with the model player and with the BFS baseline.
+
+All rows in `results/results.csv` were produced with the earlier prompt (no fall-off rule, no fallback label in history) and were not rerun; room H's existing rows remain the held-out result.
 
 ## Setup, play, test and evaluation
 
@@ -170,6 +175,23 @@ python -m pop_room model --room A --seed 3 --history 5 --view local
   line naming the tiles next to the Prince.
 
 An episode makes at most 40 model calls. The trace is written to `traces/`.
+
+Besides the 40-step limit, three limits apply to every model episode, in both
+`model` and `evaluate`:
+
+- **Per call, 30 s.** One call that times out or fails does not end the episode.
+  The game plays `wait` instead and labels the step as a fallback in the trace.
+  With `--history`, the model sees that move as
+  `wait (fallback: model call failed)`, so it isn't told it chose it.
+- **Per episode, 600 s of wall-clock time.** Once this has passed, the episode
+  ends with reason `time limit` and score 0. The limit is checked between moves,
+  so a call already under way can run up to 30 s past it. If that call wins, the
+  win stands.
+- **Failures in a row, 5.** After 5 model calls in a row fail or time out, the
+  episode ends with reason `model unavailable` and score 0, unless that failure
+  was on step 40, which gives `step limit`. Any model reply resets the count,
+  including one that names no legal action, which is an invalid move and not a
+  failed call.
 
 ### 6. Evaluation (live)
 

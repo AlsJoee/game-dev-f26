@@ -148,6 +148,114 @@ class PromptTest(unittest.TestCase):
         self.assertEqual(moves, ["- wait: wait", "- jump_right: jump_right"])
         self.assertIn("Your last 1 moves", client.prompts[1])
 
+    def test_failed_call_is_shown_as_a_fallback_not_as_the_models_move(self):
+        client = FakeClient("right", RuntimeError("503 secret detail"), "wait", "wait")
+        _, _, records, _ = play(client, max_model_calls=4, history=5)
+        moves = [line for line in client.prompts[-1].splitlines() if line.startswith("- ")]
+        self.assertEqual(moves, ["- right: right",
+                                 "- wait (fallback: model call failed): wait",
+                                 "- wait: wait"])
+        self.assertNotIn("503", client.prompts[-1])
+        # The record keeps the action the game actually played.
+        self.assertEqual((records[1]["action"], records[1]["fallback"]), ("wait", True))
+
+    def test_timed_out_call_is_shown_as_a_fallback(self):
+        client = FakeClient(0.2, "wait")
+        play(client, max_model_calls=2, history=1, timeout_s=0.02)
+        self.assertIn("- wait (fallback: model call failed): wait", client.prompts[1])
+
+
+class EpisodeTimeLimitTest(unittest.TestCase):
+    def test_default_limits(self):
+        player = ModelPlayer(FakeClient())
+        self.assertEqual((player.timeout_s, player.time_limit_s), (30.0, 600.0))
+
+    def test_slow_client_ends_episode_with_time_limit(self):
+        client = FakeClient(*[0.05] * 40)
+        player, episode, records, outcome = play(client, time_limit_s=0.12)
+        self.assertEqual((outcome["status"], outcome["reason"], outcome["score"]),
+                         ("terminal", "time limit", 0))
+        self.assertLess(len(records), 40)
+        self.assertFalse(any(r["fallback"] for r in records))
+        summary = summarize(records, outcome, player, model="fake", room="A", seed=1, git_commit="x")
+        self.assertEqual((summary["outcome"], summary["score"]), ("time limit", 0))
+        self.assertEqual(summary["time_limit_s"], 0.12)
+
+    def test_calls_past_the_timeout_are_wait_fallbacks_until_the_time_limit(self):
+        client = FakeClient(*[0.3] * 40)
+        _, _, records, outcome = play(client, timeout_s=0.02, time_limit_s=0.07)
+        self.assertEqual(outcome["reason"], "time limit")
+        self.assertLess(len(records), 40)
+        for record in records:
+            self.assertEqual((record["action"], record["fallback"]), ("wait", True))
+            self.assertIn("timed out", record["error"])
+
+    def test_win_on_the_call_that_passes_the_limit_is_still_a_win(self):
+        class SlowLastMove(FakeClient):
+            def __call__(self, prompt, seed=None):
+                if len(self.script) == 1:
+                    time.sleep(1.2)
+                return super().__call__(prompt, seed)
+
+        # The limit is well above what the six instant moves need, even on a slow machine.
+        client = SlowLastMove("right", "jump_right", "right", "right", "right", "right", "right")
+        _, _, _, outcome = play(client, time_limit_s=1.0)
+        self.assertEqual((outcome["reason"], outcome["score"]), ("reached the exit", 1))
+
+
+class ModelUnavailableTest(unittest.TestCase):
+    def test_client_that_always_fails_ends_after_5_calls(self):
+        class AlwaysFails:
+            def __init__(self):
+                self.calls = 0
+
+            def __call__(self, prompt, seed=None):
+                self.calls += 1
+                raise RuntimeError("429")
+
+        client = AlwaysFails()
+        player, episode, records, outcome = play(client)
+        self.assertEqual((outcome["status"], outcome["reason"], outcome["score"]),
+                         ("terminal", "model unavailable", 0))
+        self.assertEqual((client.calls, len(records), episode.steps), (5, 5, 5))
+        self.assertTrue(all(r["fallback"] and r["action"] == "wait" for r in records))
+        summary = summarize(records, outcome, player, model="fake", room="A", seed=1, git_commit="x")
+        self.assertEqual((summary["outcome"], summary["fallbacks"], summary["model_moves"]),
+                         ("model unavailable", 5, 0))
+
+    def test_timeouts_and_failures_count_together(self):
+        client = FakeClient(0.2, RuntimeError("500"), 0.2, RuntimeError("429"), 0.2, "wait")
+        _, _, records, outcome = play(client, timeout_s=0.02)
+        self.assertEqual(outcome["reason"], "model unavailable")
+        self.assertEqual(len(records), 5)
+
+    def test_a_model_reply_resets_the_count(self):
+        failures = [RuntimeError("429")] * 4
+        client = FakeClient(*failures, "wait", *failures, "wait")
+        _, _, records, outcome = play(client, max_model_calls=10)
+        self.assertEqual(outcome["reason"], LIMIT_REASON)
+        self.assertEqual(len(records), 10)
+
+    def test_a_reply_without_a_legal_action_also_resets_the_count(self):
+        failures = [RuntimeError("429")] * 4
+        client = FakeClient(*failures, "no idea", *failures, "wait")
+        _, _, records, outcome = play(client, max_model_calls=10)
+        self.assertEqual((outcome["reason"], len(records)), (LIMIT_REASON, 10))
+
+    def test_fifth_failure_on_the_last_step_is_the_step_limit(self):
+        client = FakeClient(*["wait"] * 35, *[RuntimeError("429")] * 5)
+        _, episode, records, outcome = play(client)
+        self.assertEqual((outcome["reason"], episode.steps, len(records)), ("step limit", 40, 40))
+
+    def test_fifth_failure_on_the_last_allowed_call_is_model_unavailable(self):
+        client = FakeClient(*[RuntimeError("429")] * 5)
+        _, _, records, outcome = play(client, max_model_calls=5)
+        self.assertEqual((outcome["reason"], len(records)), ("model unavailable", 5))
+
+    def test_replies_without_a_legal_action_are_not_failed_calls(self):
+        _, episode, _, outcome = play(FakeClient(*["no idea"] * 6), max_model_calls=6)
+        self.assertEqual(outcome["reason"], LIMIT_REASON)
+        self.assertEqual(episode.invalid_actions, 6)
 
 
 def gemini_response(text="right", prompt=120, candidates=1, thoughts=None, usage=True):

@@ -26,7 +26,12 @@ from .world import EMPTY, EXIT, FLOOR, GATE, PLATE, SPIKES, START, WALL
 DEFAULT_MODEL = "gemini-3.5-flash-lite"
 MAX_MODEL_CALLS = 60
 TIMEOUT_S = 30.0
+EPISODE_TIME_LIMIT_S = 600.0
 LIMIT_REASON = "model-call limit"
+TIME_LIMIT_REASON = "time limit"
+MAX_CONSECUTIVE_FAILURES = 5
+UNAVAILABLE_REASON = "model unavailable"
+FALLBACK_MOVE = "wait (fallback: model call failed)"  # how a fallback appears in the model's history
 VIEWS = ("map", "local")
 TILE_NAMES = {FLOOR: "floor", START: "floor", EMPTY: "gap", SPIKES: "spikes", PLATE: "plate",
               GATE: "gate", WALL: "wall", EXIT: "exit"}
@@ -195,7 +200,8 @@ def build_prompt(observation, legal_actions, history, max_steps, view="map"):
 
 class ModelPlayer:
     def __init__(self, client, history=0, max_model_calls=MAX_MODEL_CALLS,
-                 timeout_s=TIMEOUT_S, max_steps=40, seed=None, view="map"):
+                 timeout_s=TIMEOUT_S, max_steps=40, seed=None, view="map",
+                 time_limit_s=EPISODE_TIME_LIMIT_S):
         if history < 0:
             raise ValueError("history must be 0 or more")
         if view not in VIEWS:
@@ -205,6 +211,7 @@ class ModelPlayer:
         self.history = history
         self.max_model_calls = max_model_calls
         self.timeout_s = timeout_s
+        self.time_limit_s = time_limit_s
         self.max_steps = max_steps
         self.seed = seed
         self.reset()
@@ -258,19 +265,32 @@ class ModelPlayer:
 
 
 def run_episode(episode, player, room, seed, on_step=None):
-    """Play one episode. Returns (step records, outcome)."""
+    """Play one episode. Returns (step records, outcome).
+
+    The time limit is checked between moves, so a call already under way can
+    run past it by up to the per-call timeout.
+    """
     observation = episode.reset(seed=seed, room=room)
     player.reset()
     records = []
-    stopped = False
+    stopped = None
+    failures_in_a_row = 0
+    started = time.monotonic()
     while episode.outcome()["status"] != "terminal":
+        if failures_in_a_row >= MAX_CONSECUTIVE_FAILURES:
+            stopped = UNAVAILABLE_REASON
+            break
         if player.budget_left <= 0:
-            stopped = True
+            stopped = LIMIT_REASON
+            break
+        if time.monotonic() - started >= player.time_limit_s:
+            stopped = TIME_LIMIT_REASON
             break
         legal = episode.legal_actions(PLAYER_ID)
         choice = player.choose(observation, legal)
+        failures_in_a_row = failures_in_a_row + 1 if choice["fallback"] else 0
         result = episode.step(PLAYER_ID, choice["action"])
-        player.remember(choice["action"], result["text"])
+        player.remember(FALLBACK_MOVE if choice["fallback"] else choice["action"], result["text"])
         record = {"type": "step", "step": episode.steps, "observation": observation,
                   "legal_actions": legal, **choice,
                   "accepted": result["accepted"], "result": result["text"]}
@@ -280,7 +300,7 @@ def run_episode(episode, player, room, seed, on_step=None):
         observation = result["observation"]
     outcome = episode.outcome()
     if stopped:
-        outcome = {**outcome, "status": "terminal", "reason": LIMIT_REASON, "score": 0}
+        outcome = {**outcome, "status": "terminal", "reason": stopped, "score": 0}
     return records, outcome
 
 
@@ -303,5 +323,6 @@ def summarize(records, outcome, player, *, model, room, seed, git_commit):
         "total_latency_s": round(sum(r["latency_s"] for r in records), 3),
         "model": model, "model_versions": versions,
         "history": player.history, "view": player.view, "max_model_calls": player.max_model_calls,
+        "time_limit_s": player.time_limit_s,
         "room": room, "seed": seed, "git_commit": git_commit,
     }

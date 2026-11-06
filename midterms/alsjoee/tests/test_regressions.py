@@ -16,16 +16,58 @@ as one, so the Prince could end up inside a wall. Room B's declared solution
 went through the wall at row 2, column 2 (counting from 0). Walls are now
 solid: a fall stops on the empty tile directly above a wall, and only floors
 actually dropped count. That wall in room B became floor.
+
+Play crash on falling off the map (found 2026-11-06 by the independent review,
+review.md). After a fall off the bottom the final observation holds a row one
+past the map, and play's last render raised IndexError before the outcome
+printed. render now leaves the "@" out when the Prince is off the map.
 """
 
+import contextlib
+import io
 import unittest
+from unittest import mock
 
+from pop_room.__main__ import main
 from pop_room.episode import PLAYER_ID, PopRoomEpisode
+from pop_room.model_player import build_prompt
 from pop_room.rooms import ROOMS
 from pop_room.world import WALL, World
 
 P = PLAYER_ID
 ROOM_A_SOLUTION = ["right", "jump_right", "right", "right", "right", "right", "right"]
+
+FALL_OFF_RULE = "Falling off the bottom of the room kills you"
+
+
+def scripted_play(room, *typed):
+    """Everything `play` prints when the given lines are typed."""
+    out = io.StringIO()
+    with mock.patch("builtins.input", side_effect=list(typed)), contextlib.redirect_stdout(out):
+        main(["play", "--room", room])
+    return out.getvalue()
+
+
+class PlayFallOffMap20261106Test(unittest.TestCase):
+    def test_play_prints_the_outcome_after_falling_off_the_map(self):
+        printed = scripted_play("A", "right", "right")
+        self.assertIn("died: fell off the bottom", printed)
+        self.assertIn("outcome: died: fell off the bottom  score 0  steps 2", printed)
+
+    def test_final_map_has_no_marker_for_a_prince_off_the_map(self):
+        printed = scripted_play("A", "right", "right")
+        self.assertIn("\n.. .P.G.E\nlast: right; died: fell off the bottom\n", printed)
+
+
+class FallOffRuleIsStated20261106Test(unittest.TestCase):
+    def test_play_shows_the_rule(self):
+        self.assertIn(FALL_OFF_RULE, scripted_play("A", "right", "right"))
+
+    def test_model_prompt_shows_the_rule_in_both_views(self):
+        observation = PopRoomEpisode().reset(room="A")
+        for view in ("map", "local"):
+            with self.subTest(view=view):
+                self.assertIn(FALL_OFF_RULE, build_prompt(observation, ["right"], [], 40, view=view))
 
 
 class FinalStepRegressionTest(unittest.TestCase):

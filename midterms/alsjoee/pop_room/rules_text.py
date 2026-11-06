@@ -28,6 +28,7 @@ def intro(max_steps):
         "  Falling 1 floor is safe.",
         f"  Falling 2 floors costs 1 health (you start with {START_HEALTH}).",
         "  Falling 3 or more floors kills you.",
+        "  Falling off the bottom of the room kills you.",
         "  Spikes kill you.",
         f"  Stepping on the plate P opens the gate G for {GATE_OPEN_TURNS} turns; a closed gate blocks you.",
         f"  You have at most {max_steps} steps.",
@@ -35,8 +36,9 @@ def intro(max_steps):
 
 
 def render(observation):
-    """The observed map with "@" at the Prince's position."""
+    """The observed map with "@" at the Prince's position, if he is still on the map."""
     row, col = observation["prince"]["row"], observation["prince"]["col"]
     lines = list(observation["map"])
-    lines[row] = lines[row][:col] + "@" + lines[row][col + 1:]
+    if row < len(lines):  # after a fall off the bottom, row is one past the last line
+        lines[row] = lines[row][:col] + "@" + lines[row][col + 1:]
     return "\n".join(lines)
