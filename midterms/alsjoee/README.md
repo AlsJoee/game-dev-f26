@@ -30,7 +30,7 @@ turn-based episode that a model player can be evaluated on.
 | 12 | An episode ends after 40 steps. | design | Episode limit for evaluation. |
 | 13 | Walls are solid; a fall onto a wall stops on top of it | design | Decided 2026-11-04 after an invariant test found the Prince could land inside a wall; see `tests/test_regressions.py`. Not checked against the original game. |
 | 14 | Falling off the bottom of the room kills you. | design | Chosen for a one-room game with no room below; `pop_room/world.py:115`. Not checked against the original game. Stated to players from 2026-11-06; prompts in traces from commit 44b0aa3 and earlier do not include it. |
-| 15 | A model call that takes over 30 s becomes a labelled `wait` fallback. A model episode ends with reason `time limit` and score 0 if, between moves, it has run for 600 s or more. | design | Limits for evaluation, added 2026-11-06; `pop_room/model_player.py:28-29,286-287`. Apply only to the model player. |
+| 15 | A model call that takes over 30 s becomes a labelled `wait` fallback. A model episode ends with reason `time limit` and score 0 if, between moves, it has run for 600 s or more. | design | Limits for evaluation: the 30 s call timeout was added 2026-11-02 (commit 0bf785a), the 600 s episode limit 2026-11-06; `pop_room/model_player.py:28-29,286-287`. Apply only to the model player. |
 | 16 | A model episode ends with reason `model unavailable` and score 0 after 5 model calls in a row fail or time out. If the 5th failure is on step 40, the reason is `step limit`. | design | Limit for evaluation, added 2026-11-06, so an outage is not recorded as a player running out of steps; `pop_room/model_player.py:32,280-281`. Applies only to the model player. |
 
 ## Declared evaluation suite (declared October 26, 2026, before tuning)
@@ -177,7 +177,9 @@ python -m pop_room model --room A --seed 3 --history 5 --view local
 ```
 
 - `--seed` is required. Traces for seeds 1 and 2 are committed, and the command
-  refuses to overwrite a trace, before making any call. Seed 3 is unused.
+  refuses to overwrite a trace, before making any call. Seeds 3 and 4 were used
+  for the demo and recording runs (`traces/*-seed3-*`, `traces/*-seed4-*`), which
+  are not part of `results/results.csv`.
 - `--history N` shows the model its last N moves (default 0).
 - `--view map` gives the map and observation (default). `--view local` adds one
   line naming the tiles next to the Prince.
@@ -249,4 +251,4 @@ Gemini models are called through Google Vertex AI.
 - [AGENT-TEAM.md](AGENT-TEAM.md)
 - [CI.md](CI.md)
 - [review.md](review.md)
-- Recording: link to be added.
+- [Recording](https://drive.google.com/file/d/1LudtRC8Q5QUJAkES00oJogOA3a9nfeD0/view?usp=sharing) (Columbia-only access). About one minute of waiting for model replies was cut from the live run; the full episode is in `traces/`.
